@@ -1,7 +1,4 @@
-use std::{
-  collections::{BTreeMap, HashMap},
-  ops::Range,
-};
+use std::collections::{BTreeMap, HashMap};
 
 use crate::{
   matches_pattern, minus,
@@ -43,10 +40,15 @@ impl Opener {
 }
 
 // allow up to 3 captures...
-fn bounded_find(subj: &str, patt: &'static str, startpos: usize, endpos: usize) -> PatMatch {
+fn bounded_find<'a>(
+  subj: &'a str,
+  patt: &'static str,
+  startpos: usize,
+  endpos: usize,
+) -> PatMatch<'static> {
   let mut m = find_at(subj, patt, startpos);
   if m.end > endpos {
-    m = PatMatch { is_match: false, start: 0, end: 0 }
+    m = PatMatch::default()
   }
   m
 }

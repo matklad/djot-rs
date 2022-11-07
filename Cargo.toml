@@ -1,5 +1,5 @@
 [package]
-name = "djot-rs"
+name = "djot"
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
 authors = ["Aleksey Kladov <aleksey.kladov@gmail.com>"]

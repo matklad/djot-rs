@@ -4,6 +4,14 @@ mod patterns;
 mod block;
 mod inline;
 pub mod ast;
+mod to_ast;
+mod to_html;
+
+pub fn parse(text: &str) -> ast::Tag {
+  let mut p = block::Parser::new(text.to_string(), Opts::default(), None);
+  p.parse();
+  p.to_ast()
+}
 
 #[derive(Default, Clone)]
 pub struct Opts {}
@@ -35,16 +43,19 @@ fn minus(a: &'static str) -> &'static str {
 
 #[test]
 fn smoke() {
-  let text = "[![image](img.jpg)](url)";
+  let text = "One Two Three";
   let mut p = block::Parser::new(text.to_string(), Opts::default(), None);
   p.parse();
   let mut got = String::new();
-  for (s, e, a) in p.matches {
+  for &(s, e, a) in &p.matches {
     let m = format!("{a} {}-{}", s + 1, if e == s { e + 1 } else { e });
     got.push_str(&m);
     got.push('\n');
     eprintln!("{m:<20} {:?}", text.get(s..e).unwrap_or_default())
   }
+
+  let ast = p.to_ast();
+  eprintln!("{}", ast.to_json());
 
   let sh = xshell::Shell::new().unwrap();
   if !sh.path_exists("ref") {

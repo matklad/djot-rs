@@ -13,7 +13,7 @@ struct Container {
 #[derive(Default)]
 pub struct Parser {
   warn: Option<Warn>,
-  subject: String,
+  pub subject: String,
   indent: usize,
   startline: usize,
   starteol: usize,
