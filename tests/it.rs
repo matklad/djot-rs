@@ -3,16 +3,13 @@ use std::fs;
 #[test]
 fn spec_test() {
   let opts = djot::Opts { debug_matches: true };
-  let only = "fe";
+  let only = "";
 
   let sh = xshell::Shell::new().unwrap();
   for path in sh.read_dir("./tests/data").unwrap() {
     if path.extension().unwrap_or_default() == "djot" {
       if !only.is_empty() && !path.to_str().unwrap_or_default().contains(&only) {
         continue;
-      }
-      if true {
-        eprintln!("{}:", path.file_stem().unwrap().to_str().unwrap())
       }
       let source = fs::read_to_string(&path).unwrap();
       let ast = djot::parse_opts(opts.clone(), &source);

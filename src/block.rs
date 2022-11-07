@@ -84,8 +84,7 @@ static SPECS: &[Spec] = &[
       }
     },
     open: |p| {
-      let m = p.find("^(```)[ \t]*[\r\n]");
-      if !m.is_match {
+      if !p.subject[p.pos..].starts_with("```") {
         return false;
       }
       p.add_container(Container {
@@ -93,9 +92,8 @@ static SPECS: &[Spec] = &[
         inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
         indent: 0,
       });
-      eprintln!("comment me out to make the tests fail");
-      p.add_match(p.pos, m.end, "+code_block");
-      p.pos = m.end - 1;
+      p.add_match(p.pos, p.pos + 3, "+code_block");
+      p.pos = p.pos + 2;
       p.finished_line = true;
       true
     },
