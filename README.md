@@ -15,7 +15,8 @@ Djot is in development, this defines _current_ design rules:
 
 Once we get 100% of test suite working, we might think about code divergence.
 
+It might be ok to diverge earlier starting at the AST layer.
+
 Currently this is very incomplete, feel free to submit PR to fill the blank
-spaces, just try to be close to the original code. It's not complete enough to
-run test suite, but there's `smoke` test in `lib.rs` which I use in the
-meantime.
+spaces, just try to be close to the original code. There are some tests, run
+with `cargo test`.

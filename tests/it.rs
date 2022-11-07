@@ -3,7 +3,7 @@ use std::fs;
 #[test]
 fn spec_test() {
   let opts = djot::Opts { debug_matches: true };
-  let only = "";
+  let only = "fences";
 
   let sh = xshell::Shell::new().unwrap();
   for path in sh.read_dir("./tests/data").unwrap() {
