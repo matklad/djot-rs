@@ -1,5 +1,5 @@
 use crate::{
-  ast::{Doc, Image, Link, Para, Str, Tag, TagKind},
+  ast::{CodeBlock, Doc, Image, Link, Para, Str, Tag, TagKind},
   patterns::capture2,
   Match,
 };
@@ -23,6 +23,7 @@ impl Ctx {
       "para" => Para {}.into(),
       "imagetext" => Image { destination: String::new() }.into(),
       "linktext" => Link { destination: String::new() }.into(),
+      "code_block" => CodeBlock { text: String::new() }.into(),
       "destination" => Doc {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
@@ -59,6 +60,9 @@ impl Ctx {
                 }
                 _ => (),
               }
+            }
+            "code_block" => {
+              result.cast::<CodeBlock>().text = get_string_content(&result);
             }
             _ => (),
           }

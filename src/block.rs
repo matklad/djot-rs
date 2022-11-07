@@ -31,14 +31,14 @@ struct Spec {
   name: &'static str,
   is_para: bool,
   content: &'static str,
-  cont: fn(&mut Parser) -> PatMatch,
+  cont: fn(&mut Parser) -> bool,
   open: fn(&mut Parser) -> bool,
   close: fn(&mut Parser),
 }
 
 impl Spec {
   fn cont(&self, p: &mut Parser) -> bool {
-    (self.cont)(p).is_match
+    (self.cont)(p)
   }
   fn open(&self, p: &mut Parser) -> bool {
     (self.open)(p)
@@ -48,26 +48,63 @@ impl Spec {
   }
 }
 
-static SPECS: &[Spec] = &[Spec {
-  name: "para",
-  is_para: true,
-  content: "inline",
-  cont: |p| p.find("^%S"),
-  open: |p| {
-    p.add_container(Container {
-      spec: &SPECS[0],
-      inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
-      indent: 0,
-    });
-    p.add_match(p.pos, p.pos, "+para");
-    true
+static SPECS: &[Spec] = &[
+  Spec {
+    name: "para",
+    is_para: true,
+    content: "inline",
+    cont: |p| p.find("^%S").is_match,
+    open: |p| {
+      p.add_container(Container {
+        spec: &SPECS[0],
+        inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
+        indent: 0,
+      });
+      p.add_match(p.pos, p.pos, "+para");
+      true
+    },
+    close: |p| {
+      p.get_inline_matches();
+      p.add_match(p.pos - 1, p.pos - 1, "-para");
+      p.containers.pop();
+    },
   },
-  close: |p| {
-    p.get_inline_matches();
-    p.add_match(p.pos - 1, p.pos - 1, "-para");
-    p.containers.pop();
+  Spec {
+    name: "code_block",
+    is_para: false,
+    content: "text",
+    cont: |p| {
+      let m = p.find("^(```)[ \t]*[\r\n]");
+      if m.is_match {
+        p.pos = m.end - 1;
+        p.finished_line = true;
+        false
+      } else {
+        true
+      }
+    },
+    open: |p| {
+      let m = p.find("^(```)[ \t]*[\r\n]");
+      if !m.is_match {
+        return false;
+      }
+      p.add_container(Container {
+        spec: &SPECS[1],
+        inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
+        indent: 0,
+      });
+      eprintln!("comment me out to make the tests fail");
+      p.add_match(p.pos, m.end, "+code_block");
+      p.pos = m.end - 1;
+      p.finished_line = true;
+      true
+    },
+    close: |p| {
+      p.add_match(p.pos - 3, p.pos, "-code_block");
+      p.containers.pop();
+    },
   },
-}];
+];
 
 impl Parser {
   pub fn new(mut subject: String, opts: Opts, warn: Option<Warn>) -> Parser {
@@ -86,7 +123,7 @@ impl Parser {
     self.matches.extend(matches);
   }
 
-  fn find(&self, pat: &'static str) -> PatMatch {
+  fn find(&self, pat: &'static str) -> PatMatch<'static> {
     find_at(&self.subject, pat, self.pos)
   }
 

@@ -26,6 +26,13 @@ impl Ctx {
         self.out("</p>");
         self.out("\n")
       }
+      TagKind::Link(image) => {
+        let mut attrs = Attrs::new();
+        attrs.insert("href".to_string(), image.destination.clone());
+        self.render_tag("a", &attrs);
+        self.render_children(tag);
+        self.out("</a>");
+      }
       TagKind::Image(image) => {
         let mut attrs = Attrs::new();
         let alt_text = get_string_content(tag);
@@ -35,12 +42,11 @@ impl Ctx {
         attrs.insert("src".to_string(), image.destination.clone());
         self.render_tag("img", &attrs)
       }
-      TagKind::Link(image) => {
-        let mut attrs = Attrs::new();
-        attrs.insert("href".to_string(), image.destination.clone());
-        self.render_tag("a", &attrs);
-        self.render_children(tag);
-        self.out("</a>");
+      TagKind::CodeBlock(code_block) => {
+        self.render_tag("pre", &tag.attrs);
+        self.render_tag("code", &Attrs::default());
+        self.out_escape_html(&code_block.text);
+        self.out("</code></pre>");
       }
       TagKind::SoftBreak(_) => self.out("\n"),
       TagKind::Str(str) => self.out_escape_html(&str.text),
