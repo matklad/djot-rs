@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 #[derive(Debug, Default)]
 pub struct PatMatch<'a> {
   pub is_match: bool,
@@ -35,8 +33,6 @@ pub fn find_at<'a>(subject: &'a str, pat: &'static str, start: usize) -> PatMatc
   let mut pat = lua_patterns::LuaPattern::new(pat);
   let is_match = pat.matches(&subject[start..]);
   let range = pat.range();
-  let captures = pat.match_captures(&subject[start..]);
-  let (cap1, cap2) = (captures.get(0), captures.get(1));
   PatMatch { start: range.start + start, end: range.end + start, is_match, cap1: "", cap2: "" }
 }
 

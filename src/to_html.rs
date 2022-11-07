@@ -1,6 +1,7 @@
-use std::borrow::Cow;
-
-use crate::ast::{Tag, TagKind};
+use crate::{
+  ast::{Attrs, Tag, TagKind},
+  to_ast::get_string_content,
+};
 
 impl Tag {
   pub fn to_html(&self) -> String {
@@ -20,11 +21,28 @@ impl Ctx {
       TagKind::Doc(_doc) => self.render_children(tag),
       TagKind::Heading(_) => todo!(),
       TagKind::Para(_para) => {
-        self.render_tag("p", tag);
+        self.render_tag("p", &tag.attrs);
         self.render_children(tag);
         self.out("</p>");
         self.out("\n")
       }
+      TagKind::Image(image) => {
+        let mut attrs = Attrs::new();
+        let alt_text = get_string_content(tag);
+        if !alt_text.is_empty() {
+          attrs.insert("alt".to_string(), alt_text);
+        }
+        attrs.insert("src".to_string(), image.destination.clone());
+        self.render_tag("img", &attrs)
+      }
+      TagKind::Link(image) => {
+        let mut attrs = Attrs::new();
+        attrs.insert("href".to_string(), image.destination.clone());
+        self.render_tag("a", &attrs);
+        self.render_children(tag);
+        self.out("</a>");
+      }
+      TagKind::SoftBreak(_) => self.out("\n"),
       TagKind::Str(str) => self.out_escape_html(&str.text),
     }
   }
@@ -35,9 +53,15 @@ impl Ctx {
     }
   }
 
-  fn render_tag(&mut self, tag_name: &str, _tag: &Tag) {
+  fn render_tag(&mut self, tag_name: &str, attrs: &Attrs) {
     self.out("<");
     self.out(tag_name);
+    for (k, v) in attrs {
+      self.out(" ");
+      self.out(k);
+      self.out("=");
+      self.out(&format!("{v:?}"));
+    }
     self.out(">");
   }
 

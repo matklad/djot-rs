@@ -94,7 +94,7 @@ impl Parser {
     defaultmatch: &'static str,
   ) -> usize {
     let mut can_open = find_at(&self.subject, "^%S", pos + 1).is_match;
-    let mut can_close = find_at(&self.subject, "^%S", pos - 1).is_match;
+    let mut _can_close = find_at(&self.subject, "^%S", pos - 1).is_match;
     let has_open_marker = matches_pattern(self.matches.get(&(pos - 1)), "open_marker");
     let hash_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
     let mut endcloser = pos;
@@ -104,12 +104,12 @@ impl Parser {
 
     // allow explicit open/close markers to override:
     if has_open_marker {
-      can_close = true;
-      can_close = false;
+      _can_close = true;
+      can_open = false;
       startopener = pos - 1;
     }
     if !has_open_marker && hash_close_marker {
-      can_close = true;
+      _can_close = true;
       can_open = false;
       endcloser = pos + 1;
     }
@@ -117,7 +117,7 @@ impl Parser {
     // TODO: defaultmatch
 
     let openers = self.openers.entry(c).or_default();
-    if can_close && openers.len() > 0 {
+    if _can_close && openers.len() > 0 {
       // check openers for a match
       let opener = *openers.last().unwrap();
       if opener.epos != pos - 1 {
@@ -365,10 +365,10 @@ impl Parser {
         let c = subject.as_bytes()[pos];
         if c == b'\r' || c == b'\n' {
           if c == b'\r' && bounded_find(&subject, "^[%n]", pos + 1, endpos).is_match {
-            self.add_match(pos, pos + 1, "softbreak");
+            self.add_match(pos, pos + 2, "softbreak");
             pos = pos + 2
           } else {
-            self.add_match(pos, pos, "softbreak");
+            self.add_match(pos, pos + 1, "softbreak");
             pos = pos + 1
           }
         } else if self.verbatim > 0 {

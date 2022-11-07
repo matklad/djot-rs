@@ -8,13 +8,19 @@ mod to_ast;
 mod to_html;
 
 pub fn parse(text: &str) -> ast::Tag {
-  let mut p = block::Parser::new(text.to_string(), Opts::default(), None);
+  parse_opts(Opts::default(), text)
+}
+
+pub fn parse_opts(opts: Opts, text: &str) -> ast::Tag {
+  let mut p = block::Parser::new(text.to_string(), opts, None);
   p.parse();
   p.to_ast()
 }
 
 #[derive(Default, Clone)]
-pub struct Opts {}
+pub struct Opts {
+  pub debug_matches: bool,
+}
 
 pub type Warn = Rc<dyn Fn()>;
 
@@ -41,32 +47,3 @@ fn minus(a: &'static str) -> &'static str {
   }
 }
 
-#[test]
-fn smoke() {
-  let text = "One Two Three";
-  let mut p = block::Parser::new(text.to_string(), Opts::default(), None);
-  p.parse();
-  let mut got = String::new();
-  for &(s, e, a) in &p.matches {
-    let m = format!("{a} {}-{}", s + 1, if e == s { e + 1 } else { e });
-    got.push_str(&m);
-    got.push('\n');
-    eprintln!("{m:<20} {:?}", text.get(s..e).unwrap_or_default())
-  }
-
-  let ast = p.to_ast();
-  eprintln!("{}", ast.to_json());
-
-  let sh = xshell::Shell::new().unwrap();
-  if !sh.path_exists("ref") {
-    xshell::cmd!(sh, "git clone https://github.com/jgm/djot ref").run().unwrap();
-  }
-  sh.change_dir("ref");
-  let want = xshell::cmd!(sh, "lua ./bin/main.lua -m").stdin(text).read().unwrap();
-  if want.trim() == got.trim() {
-    eprintln!("ok!")
-  } else {
-    eprintln!("\nERROR:");
-    eprintln!("{want}")
-  }
-}

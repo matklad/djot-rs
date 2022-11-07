@@ -1,14 +1,12 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
-use crate::{patterns::capture2, Match};
-
-type Attrs = BTreeMap<String, String>;
+pub type Attrs = IndexMap<String, String>;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Tag {
   #[serde(flatten)]
   pub kind: TagKind,
-  #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+  #[serde(skip_serializing_if = "Attrs::is_empty")]
   pub attrs: Attrs,
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub children: Vec<Tag>,
@@ -29,10 +27,18 @@ impl From<$tag> for TagKind {
   }
 }
 )*
+
+$(
+impl Cast<$tag> for Tag {
+  fn cast(&mut self) -> &mut $tag {
+    match &mut self.kind { TagKind::$tag(it) => it, _ => panic!() }
+  }
+}
+)*
     };
 }
 
-tags![Doc, Heading, Para, Str];
+tags![Doc, Heading, Para, Link, Image, SoftBreak, Str];
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Doc {}
@@ -44,6 +50,19 @@ pub struct Heading {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Para {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Link {
+  pub destination: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Image {
+  pub destination: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SoftBreak {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Str {
@@ -68,12 +87,23 @@ impl Tag {
   pub fn to_json(&self) -> String {
     serde_json::to_string_pretty(self).unwrap()
   }
+
+  pub(crate) fn cast<T>(&mut self) -> &mut T
+  where
+    Self: Cast<T>,
+  {
+    Cast::cast(self)
+  }
 }
 
 impl Str {
   pub fn new(text: impl Into<String>) -> Str {
     Str { text: text.into() }
   }
+}
+
+pub(crate) trait Cast<T> {
+  fn cast(&mut self) -> &mut T;
 }
 
 #[test]

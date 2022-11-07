@@ -238,5 +238,11 @@ impl Parser {
     while let Some(cont) = self.containers.last() {
       cont.spec.close(self)
     }
+    if self.opts.debug_matches {
+      for &(s, e, a) in &self.matches {
+        let m = format!("{a} {}-{}", s + 1, if e == s { e + 1 } else { e });
+        eprintln!("{m:<20} {:?}", self.subject.get(s..e).unwrap_or_default())
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 use crate::{
-  ast::{Doc, Para, Str, Tag, TagKind},
+  ast::{Doc, Image, Link, Para, Str, Tag, TagKind},
   patterns::capture2,
   Match,
 };
@@ -18,23 +18,50 @@ struct Ctx {
 
 impl Ctx {
   fn get_node(&mut self, maintag: &str) -> Tag {
-    eprintln!("maintagc = {:?}", maintag);
     let mut node = Tag::new(match maintag {
       "doc" => TagKind::Doc(Doc {}),
       "para" => Para {}.into(),
+      "imagetext" => Image { destination: String::new() }.into(),
+      "linktext" => Link { destination: String::new() }.into(),
+      "destination" => Doc {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
       let (startpos, endpos, annot) = self.matches[self.idx];
       let (mode, tag) = capture2(annot, "^([-+]?)(.*)");
+
+      if matches!(tag, "blankline" | "image_marker") {
+        self.idx += 1;
+        continue;
+      }
+
       if mode == "-" && tag == maintag {
         self.idx += 1;
         return node;
       } else {
         if mode == "+" {
-          let startidx = self.idx;
+          let _startidx = self.idx;
           self.idx += 1;
           let mut result = self.get_node(tag);
+          match tag {
+            "imagetext" | "linktext" => {
+              let destination = match tag {
+                "imagetext" => &mut result.cast::<Image>().destination,
+                "linktext" => &mut result.cast::<Link>().destination,
+                _ => unreachable!(),
+              };
+              let (_, _, nextannot) = self.matches[self.idx];
+              match nextannot {
+                "+destination" => {
+                  self.idx += 1;
+                  let dest = self.get_node("destination");
+                  *destination = get_string_content(&dest);
+                }
+                _ => (),
+              }
+            }
+            _ => (),
+          }
           node.children.push(result)
         } else if mode == "-" {
           panic!("unhandled {annot}")
@@ -46,4 +73,17 @@ impl Ctx {
     }
     node
   }
+}
+
+pub(crate) fn get_string_content(dest: &Tag) -> String {
+  let mut res = String::new();
+  match &dest.kind {
+    TagKind::SoftBreak(_) => res.push('\n'),
+    TagKind::Str(str) => res.push_str(&str.text),
+    _ => (),
+  }
+  for c in &dest.children {
+    res.push_str(&get_string_content(c))
+  }
+  res
 }
