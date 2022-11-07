@@ -3,6 +3,7 @@ use std::rc::Rc;
 mod patterns;
 mod block;
 mod inline;
+pub mod ast;
 
 #[derive(Default, Clone)]
 pub struct Opts {}
