@@ -1,21 +1,21 @@
 use crate::{
   ast::{Attrs, Tag, TagKind},
   to_ast::get_string_content,
+  HtmlOpts,
 };
 
-impl Tag {
-  pub fn to_html(&self) -> String {
-    let mut ctx = Ctx::default();
-    ctx.render(self);
-    ctx.res
-  }
+pub(crate) fn to_html(opts: &HtmlOpts, tag: &Tag) -> String {
+  let mut ctx = Ctx { opts, res: String::new() };
+  ctx.render(tag);
+  ctx.res
 }
 
-#[derive(Default)]
-struct Ctx {
+struct Ctx<'a> {
+  #[allow(unused)]
+  opts: &'a HtmlOpts,
   res: String,
 }
-impl Ctx {
+impl<'a> Ctx<'a> {
   fn render(&mut self, tag: &Tag) {
     match &tag.kind {
       TagKind::Doc(_doc) => self.render_children(tag),

@@ -3,12 +3,12 @@ use std::collections::{BTreeMap, HashMap};
 use crate::{
   matches_pattern, minus,
   patterns::{find_at, PatMatch},
-  plus, Match, Opts, Warn,
+  plus, Match, ParseOpts, Warn,
 };
 
 #[derive(Default)]
 pub struct Parser {
-  opts: Opts,
+  opts: ParseOpts,
   warn: Option<Warn>,
   subject: String,
   matches: BTreeMap<usize, Match>,
@@ -18,10 +18,6 @@ pub struct Parser {
   destination: bool,
   firstpos: usize,
   lastpos: usize,
-  allow_attributes: bool,
-  attribute_parser: (),
-  attribute_start: (),
-  attribute_slices: (),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -54,7 +50,7 @@ fn bounded_find<'a>(
 }
 
 impl Parser {
-  pub fn new(subject: String, opts: Opts, warn: Option<Warn>) -> Parser {
+  pub fn new(subject: String, opts: ParseOpts, warn: Option<Warn>) -> Parser {
     let mut res = Parser::default();
     res.subject = subject;
     res.opts = opts;

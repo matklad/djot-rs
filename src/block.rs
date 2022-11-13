@@ -1,7 +1,7 @@
 use crate::{
   inline,
   patterns::{find, find_at, PatMatch},
-  Match, Opts, Warn,
+  Match, ParseOpts, Warn,
 };
 
 struct Container {
@@ -22,12 +22,12 @@ pub struct Parser {
   containers: Vec<Container>,
   pos: usize,
   last_matched_container: usize,
-  timer: (),
-  opts: Opts,
+  opts: ParseOpts,
   finished_line: bool,
 }
 
 struct Spec {
+  #[allow(unused)]
   name: &'static str,
   is_para: bool,
   content: &'static str,
@@ -105,7 +105,7 @@ static SPECS: &[Spec] = &[
 ];
 
 impl Parser {
-  pub fn new(mut subject: String, opts: Opts, warn: Option<Warn>) -> Parser {
+  pub fn new(mut subject: String, opts: ParseOpts, warn: Option<Warn>) -> Parser {
     if !find(&subject, "[\r\n]$").is_match {
       subject.push('\n');
     }

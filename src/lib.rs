@@ -8,18 +8,29 @@ mod to_ast;
 mod to_html;
 
 pub fn parse(text: &str) -> ast::Tag {
-  parse_opts(Opts::default(), text)
+  parse_opts(ParseOpts::default(), text)
 }
 
-pub fn parse_opts(opts: Opts, text: &str) -> ast::Tag {
+#[derive(Default, Clone)]
+pub struct ParseOpts {
+  pub debug_matches: bool,
+}
+
+pub fn parse_opts(opts: ParseOpts, text: &str) -> ast::Tag {
   let mut p = block::Parser::new(text.to_string(), opts, None);
   p.parse();
   p.to_ast()
 }
 
+pub fn to_html(tag: &ast::Tag) -> String {
+  to_html_opts(&HtmlOpts::default(), tag)
+}
+
 #[derive(Default, Clone)]
-pub struct Opts {
-  pub debug_matches: bool,
+pub struct HtmlOpts {}
+
+pub fn to_html_opts(opts: &HtmlOpts, tag: &ast::Tag) -> String {
+  to_html::to_html(opts, tag)
 }
 
 pub type Warn = Rc<dyn Fn()>;
@@ -46,4 +57,3 @@ fn minus(a: &'static str) -> &'static str {
     _ => panic!("{a}"),
   }
 }
-
