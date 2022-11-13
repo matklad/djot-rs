@@ -390,6 +390,8 @@ impl Parser {
               // TODO: Check for raw attributes
               self.add_match(pos, m.end, self.verbatim_type.sub());
               pos = m.end;
+              self.verbatim = 0;
+              self.verbatim_type = Comp::default();
             } else {
               let endchar = m.end_or(endpos);
               self.add_match(pos, endchar, Atom::Str);
@@ -421,9 +423,14 @@ impl Parser {
       }
     }
     if sorted.len() > 0 {
-      // remove final softbreak
       if sorted.last().unwrap().is(Atom::Softbreak) {
+        // remove final softbreak
         sorted.pop();
+      }
+      if self.verbatim > 0 {
+        // unclosed verbatim
+        let e = sorted.last().unwrap().e;
+        sorted.push(Match::new(e..e, self.verbatim_type.sub()))
       }
     }
     sorted

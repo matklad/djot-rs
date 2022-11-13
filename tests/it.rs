@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 #[allow(unused)]
 fn to_ref_html(source: &str, matches: bool) -> String {
@@ -14,8 +14,6 @@ fn to_ref_html(source: &str, matches: bool) -> String {
 }
 
 struct TestOpts {
-  only: &'static str,
-  only_nth: usize,
   debug_ast: bool,
   ref_matches: bool,
   parse: djot::ParseOpts,
@@ -24,23 +22,20 @@ struct TestOpts {
 #[test]
 fn ref_tests() {
   let opts = TestOpts {
-    only: "",
-    only_nth: !0,
     debug_ast: false,
-    ref_matches: true,
+    ref_matches: false,
     parse: djot::ParseOpts { debug_matches: true },
   };
 
+  let mut last_fail = LastFail::load();
   let sh = xshell::Shell::new().unwrap();
   let mut total = 0;
   for path in sh.read_dir("./tests/data").unwrap() {
     if path.extension().unwrap_or_default() == "test" {
-      if !opts.only.is_empty() && !path.to_str().unwrap_or_default().contains(&opts.only) {
-        continue;
-      }
+      let file_stem = path.file_stem().unwrap_or_default().to_str().unwrap_or_default();
       let source = fs::read_to_string(&path).unwrap();
       for (i, test_case) in parse_test(source.as_str()).into_iter().enumerate() {
-        if !opts.only.is_empty() && opts.only_nth != !0 && i != opts.only_nth {
+        if last_fail.skip(file_stem, i) {
           continue;
         }
         let mut debug = String::new();
@@ -72,6 +67,7 @@ fn ref_tests() {
           }
           panic!("{msg}")
         }
+        last_fail.test_ok();
         total += 1;
       }
     }
@@ -136,4 +132,50 @@ fn parse_fence(line: &str) -> Option<usize> {
   } else {
     None
   }
+}
+
+struct LastFail {
+  loaded: Option<(String, usize)>,
+  current: Option<(String, usize)>,
+}
+
+impl LastFail {
+  fn load() -> LastFail {
+    let mut loaded = None;
+    if let Ok(text) = fs::read_to_string(fail_file()) {
+      let (name, pos) = text.split_once(':').unwrap_or_else(|| panic!("bad fail file {text:?}"));
+      let idx = pos.parse::<usize>().unwrap_or_else(|_| panic!("bad fail file {text:?}"));
+      eprintln!("loaded fail {name}:{idx}");
+      loaded = Some((name.to_string(), idx))
+    }
+    LastFail { loaded, current: None }
+  }
+  fn skip(&mut self, name: &str, pos: usize) -> bool {
+    self.current = Some((name.to_string(), pos));
+    if let Some(loaded) = &self.loaded {
+      return !(loaded.0 == name && loaded.1 == pos);
+    }
+    false
+  }
+  fn test_ok(&mut self) {
+    if let Some((name, pos)) = &self.loaded {
+      eprintln!("{}:{} is now ok!", name, pos);
+      let _ = fs::remove_file(&fail_file());
+      self.loaded = None;
+    }
+    self.current = None
+  }
+}
+
+impl Drop for LastFail {
+  fn drop(&mut self) {
+    if let Some((name, pos)) = &self.current {
+      eprintln!("saved fail {name}:{pos}");
+      let _ = fs::write(fail_file(), format!("{name}:{pos}"));
+    }
+  }
+}
+
+fn fail_file() -> PathBuf {
+  PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("fail")
 }
