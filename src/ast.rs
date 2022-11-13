@@ -47,6 +47,7 @@ tags![
   CodeBlock,
   Strong,
   Emph,
+  Span,
   DoubleQuoted,
   Verbatim,
   Softbreak,
@@ -66,12 +67,18 @@ pub struct Para {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Link {
-  pub destination: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub destination: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub reference: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Image {
-  pub destination: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub destination: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub reference: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -89,11 +96,14 @@ pub struct Strong {}
 pub struct Emph {}
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct Span {}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct DoubleQuoted {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Verbatim {
-  pub text: String
+  pub text: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

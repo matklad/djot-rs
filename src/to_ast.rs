@@ -1,8 +1,8 @@
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Softbreak, Str, Strong, Tag, TagKind,
-    Verbatim,
+    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Softbreak, Span, Str, Strong, Tag,
+    TagKind, Verbatim,
   },
   patterns::find,
   Match,
@@ -25,14 +25,15 @@ impl Ctx {
     let mut node = Tag::new(match maintag {
       Comp::Doc => TagKind::Doc(Doc {}),
       Comp::Para => Para {}.into(),
-      Comp::Imagetext => Image { destination: String::new() }.into(),
-      Comp::Linktext => Link { destination: String::new() }.into(),
+      Comp::Imagetext => Image { destination: None, reference: None }.into(),
+      Comp::Linktext => Link { destination: None, reference: None }.into(),
       Comp::CodeBlock => CodeBlock { text: String::new() }.into(),
       Comp::Destination => Doc {}.into(),
       Comp::Strong => Strong {}.into(),
       Comp::Emph => Emph {}.into(),
       Comp::DoubleQuoted => DoubleQuoted {}.into(),
       Comp::Verbatim => Verbatim { text: String::new() }.into(),
+      Comp::Reference => Span {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
@@ -54,15 +55,26 @@ impl Ctx {
             let mut result = self.get_node(tag);
             match tag {
               Comp::Imagetext | Comp::Linktext => {
-                let destination = match tag {
-                  Comp::Imagetext => &mut result.cast::<Image>().destination,
-                  Comp::Linktext => &mut result.cast::<Link>().destination,
-                  _ => unreachable!(),
-                };
                 if self.matches[self.idx].is(Comp::Destination.add()) {
                   self.idx += 1;
                   let dest = self.get_node(Comp::Destination);
-                  *destination = get_string_content(&dest);
+
+                  let destination = match tag {
+                    Comp::Imagetext => &mut result.cast::<Image>().destination,
+                    Comp::Linktext => &mut result.cast::<Link>().destination,
+                    _ => unreachable!(),
+                  };
+                  *destination = Some(get_string_content(&dest));
+                } else if self.matches[self.idx].is(Comp::Reference.add()) {
+                  self.idx += 1;
+                  let span = self.get_node(Comp::Reference);
+
+                  let reference = match tag {
+                    Comp::Imagetext => &mut result.cast::<Image>().reference,
+                    Comp::Linktext => &mut result.cast::<Link>().reference,
+                    _ => unreachable!(),
+                  };
+                  *reference = Some(get_string_content(&span));
                 }
               }
               Comp::CodeBlock => result.cast::<CodeBlock>().text = get_string_content(&result),

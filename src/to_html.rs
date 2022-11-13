@@ -28,7 +28,10 @@ impl<'a> Ctx<'a> {
       }
       TagKind::Link(image) => {
         let mut attrs = Attrs::new();
-        attrs.insert("href".to_string(), image.destination.clone());
+        attrs.insert(
+          "href".to_string(),
+          image.destination.clone().unwrap_or_else(|| "url".to_string()),
+        );
         self.render_tag("a", &attrs);
         self.render_children(tag);
         self.out("</a>");
@@ -39,7 +42,10 @@ impl<'a> Ctx<'a> {
         if !alt_text.is_empty() {
           attrs.insert("alt".to_string(), alt_text);
         }
-        attrs.insert("src".to_string(), image.destination.clone());
+        attrs.insert(
+          "src".to_string(),
+          image.destination.clone().unwrap_or_else(|| "url".to_string()),
+        );
         self.render_tag("img", &attrs)
       }
       TagKind::CodeBlock(code_block) => {
@@ -69,7 +75,12 @@ impl<'a> Ctx<'a> {
         self.render_tag("code", &tag.attrs);
         self.out_escape_html(&verbatim.text);
         self.out("</code>");
-    },
+      }
+      TagKind::Span(_) => {
+        self.render_tag("span", &tag.attrs);
+        self.render_children(tag);
+        self.out("</span>");
+      }
     }
   }
 

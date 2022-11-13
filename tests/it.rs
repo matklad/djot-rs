@@ -23,7 +23,7 @@ struct TestOpts {
 fn ref_tests() {
   let opts = TestOpts {
     debug_ast: false,
-    ref_matches: false,
+    ref_matches: true,
     parse: djot::ParseOpts { debug_matches: true },
   };
 
