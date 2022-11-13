@@ -24,8 +24,8 @@ struct TestOpts {
 #[test]
 fn ref_tests() {
   let opts = TestOpts {
-    only: "verbatim",
-    only_nth: 2,
+    only: "",
+    only_nth: !0,
     debug_ast: false,
     ref_matches: true,
     parse: djot::ParseOpts { debug_matches: true },

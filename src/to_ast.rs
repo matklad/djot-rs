@@ -4,6 +4,7 @@ use crate::{
     CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Softbreak, Str, Strong, Tag, TagKind,
     Verbatim,
   },
+  patterns::find,
   Match,
 };
 
@@ -65,7 +66,16 @@ impl Ctx {
                 }
               }
               Comp::CodeBlock => result.cast::<CodeBlock>().text = get_string_content(&result),
-              Comp::Verbatim => result.cast::<Verbatim>().text = get_string_content(&result),
+              Comp::Verbatim => {
+                let mut text = get_string_content(&result);
+                if find(text.as_str(), "^ +`").is_match {
+                  text.remove(0);
+                }
+                if find(text.as_str(), "` +$").is_match {
+                  text.pop();
+                }
+                result.cast::<Verbatim>().text = text;
+              }
               _ => (),
             }
             node.children.push(result)

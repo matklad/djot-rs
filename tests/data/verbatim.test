@@ -24,7 +24,7 @@ Special characters: `*hi*`
 .
 <p>*foo<code>*</code></p>
 ```
-STOP
+
 ```
 `````a`a``a```a````a``````a`````
 .
@@ -36,7 +36,7 @@ STOP
 .
 <p><code>``a``</code></p>
 ```
-
+STOP
 Implicitly closed by end of paragraph:
 
 ```

@@ -89,7 +89,7 @@ static SPECS: &[Spec] = &[
       }
     },
     open: |p| {
-      if !p.subject[p.pos..].starts_with("```") {
+      if !p.subject[p.pos..].starts_with("```\n") {
         return false;
       }
       p.add_container(Container {
