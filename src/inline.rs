@@ -85,8 +85,9 @@ impl Parser {
 
   fn between_matched(&mut self, pos: usize, c: u8, annotation: Comp, defaultmatch: Atom) -> usize {
     let mut can_open = find_at(&self.subject, "^%S", pos + 1).is_match;
-    let mut _can_close = !self.subject[..pos].ends_with(is_space);
-    let has_open_marker = pos != 0 && false; // TODO: matches_pattern(self.matches.get(&(pos - 1)), "open_marker");
+    let mut can_close = !self.subject[..pos].ends_with(is_space);
+    let has_open_marker =
+      pos != 0 && self.matches.get(&(pos - 1)).map_or(false, |it| it.is(Atom::OpenMarker));
     let hash_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
     let mut endcloser = pos;
     let mut startopener = pos;
@@ -95,12 +96,12 @@ impl Parser {
 
     // allow explicit open/close markers to override:
     if has_open_marker {
-      _can_close = true;
-      can_open = false;
+      can_open = true;
+      can_close = false;
       startopener = pos - 1;
     }
     if !has_open_marker && hash_close_marker {
-      _can_close = true;
+      can_close = true;
       can_open = false;
       endcloser = pos + 1;
     }
@@ -108,7 +109,7 @@ impl Parser {
     // TODO: defaultmatch
 
     let openers = self.openers.entry(c).or_default();
-    if _can_close && openers.len() > 0 {
+    if can_close && openers.len() > 0 {
       // check openers for a match
       let opener = *openers.last().unwrap();
       if opener.epos != pos - 1 {
@@ -307,7 +308,16 @@ impl Parser {
       }
       b'_' => Some(self.between_matched(pos, b'_', Comp::Emph, Atom::Str)),
       b'*' => Some(self.between_matched(pos, b'*', Comp::Strong, Atom::Str)),
-      b'{' => todo!(),
+      b'{' => {
+        if self.subject[pos + 1..endpos].starts_with(|c: char| "_*^+='\"-".contains(c)) {
+          self.add_match(pos, pos + 1, Atom::OpenMarker);
+          return Some(pos + 1);
+        } else {
+          // TODO: attributes
+          self.add_match(pos, pos + 1, Atom::Str);
+          return Some(pos + 1);
+        }
+      }
       b':' => todo!(),
       b'+' => todo!(),
       b'=' => todo!(),

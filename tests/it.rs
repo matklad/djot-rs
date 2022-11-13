@@ -1,27 +1,35 @@
 use std::fs;
 
 #[allow(unused)]
-fn to_ref_html(source: &str) -> String {
+fn to_ref_html(source: &str, matches: bool) -> String {
   let sh = xshell::Shell::new().unwrap();
   if !sh.path_exists("ref") {
     xshell::cmd!(sh, "git clone https://github.com/jgm/djot ref").run().unwrap();
   }
   sh.change_dir("ref");
-  let mut html = xshell::cmd!(sh, "lua ./bin/main.lua").stdin(source).read().unwrap();
+  let matches = if matches { Some("-m") } else { None };
+  let mut html = xshell::cmd!(sh, "lua ./bin/main.lua {matches...}").stdin(source).read().unwrap();
   html.push('\n');
   html
 }
 
 struct TestOpts {
   only: &'static str,
+  only_nth: usize,
   debug_ast: bool,
+  ref_matches: bool,
   parse: djot::ParseOpts,
 }
 
 #[test]
 fn ref_tests() {
-  let opts =
-    TestOpts { only: "", debug_ast: true, parse: djot::ParseOpts { debug_matches: true } };
+  let opts = TestOpts {
+    only: "",
+    only_nth: !0,
+    debug_ast: false,
+    ref_matches: true,
+    parse: djot::ParseOpts { debug_matches: true },
+  };
 
   let sh = xshell::Shell::new().unwrap();
   let mut total = 0;
@@ -31,7 +39,10 @@ fn ref_tests() {
         continue;
       }
       let source = fs::read_to_string(&path).unwrap();
-      for test_case in parse_test(source.as_str()) {
+      for (i, test_case) in parse_test(source.as_str()).into_iter().enumerate() {
+        if !opts.only.is_empty() && opts.only_nth != !0 && i != opts.only_nth {
+          continue;
+        }
         let mut debug = String::new();
         let parse = djot::parse_opts(opts.parse.clone(), &test_case.djot);
         debug.push_str(&parse.debug);
@@ -40,7 +51,10 @@ fn ref_tests() {
         }
         let got = djot::to_html(&parse.ast);
         let want = test_case.html.as_str();
-        let ref_html = to_ref_html(&test_case.djot);
+        let ref_html = to_ref_html(&test_case.djot, false);
+        if opts.ref_matches {
+          debug.push_str(&format!("Ref Matches:\n{}-----", to_ref_html(&test_case.djot, true)));
+        }
         if want != ref_html.as_str() {
           panic!(
             "\nReference mismatch in {}\nRef:\n{ref_html}-----\nWant:\n{want}-----\n",
@@ -49,8 +63,9 @@ fn ref_tests() {
         }
         if got.as_str() != want {
           let mut msg = format!(
-            "\nMismatch in {}\nSource:\n{source}-----\nWant:\n{want}-----\nGot:\n{got}-----\n",
-            path.display()
+            "\nMismatch in {}\nSource:\n{}-----\nWant:\n{want}-----\nGot:\n{got}-----\n",
+            path.display(),
+            test_case.djot,
           );
           if !debug.is_empty() {
             msg = format!("{msg}Debug:\n{debug}-----\n")

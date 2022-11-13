@@ -36,7 +36,6 @@ pub fn find_at<'a>(subject: &'a str, pat: &'static str, start: usize) -> PatMatc
   PatMatch { start: range.start + start, end: range.end + start, is_match, cap1: "", cap2: "" }
 }
 
-
 pub(crate) fn is_space(c: char) -> bool {
   " \n\t".contains(c)
 }

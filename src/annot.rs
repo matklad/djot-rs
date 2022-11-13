@@ -19,6 +19,7 @@ pub(crate) enum Atom {
   Ellipses,
   Softbreak,
   FootnoteReference,
+  OpenMarker,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -78,6 +79,7 @@ impl fmt::Display for Atom {
       Atom::Ellipses => "ellipses",
       Atom::Softbreak => "softbreak",
       Atom::FootnoteReference => "footnote_reference",
+      Atom::OpenMarker => "open_marker",
     };
     f.write_str(s)
   }

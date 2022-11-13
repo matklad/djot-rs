@@ -109,7 +109,7 @@ _(_foo_)_
 .
 <p><em>(</em>foo<em>)</em></p>
 ```
-STOP
+
 But you can force the second `_` to be an opener
 using the marker `{`.
 
@@ -118,7 +118,7 @@ _({_foo_})_
 .
 <p><em>(<em>foo</em>)</em></p>
 ```
-
+STOP
 ```
 _(*foo*)_
 .
