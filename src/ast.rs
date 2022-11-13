@@ -38,7 +38,7 @@ impl Cast<$tag> for Tag {
     };
 }
 
-tags![Doc, Heading, Para, Link, Image, CodeBlock, SoftBreak, Str];
+tags![Doc, Heading, Para, Link, Image, CodeBlock, Strong, Emph, SoftBreak, Str];
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Doc {}
@@ -68,6 +68,12 @@ pub struct CodeBlock {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SoftBreak {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Strong {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Emph {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Str {

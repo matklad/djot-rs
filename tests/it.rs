@@ -12,46 +12,65 @@ fn to_ref_html(source: &str) -> String {
   html
 }
 
+struct TestOpts {
+  only: &'static str,
+  debug_ast: bool,
+  parse: djot::ParseOpts,
+}
+
 #[test]
 fn ref_tests() {
-  let opts = djot::ParseOpts { debug_matches: false };
-  let only = "";
+  let opts =
+    TestOpts { only: "emph", debug_ast: true, parse: djot::ParseOpts { debug_matches: true } };
 
   let sh = xshell::Shell::new().unwrap();
+  let mut total = 0;
   for path in sh.read_dir("./tests/data").unwrap() {
     if path.extension().unwrap_or_default() == "test" {
-      if !only.is_empty() && !path.to_str().unwrap_or_default().contains(&only) {
+      if !opts.only.is_empty() && !path.to_str().unwrap_or_default().contains(&opts.only) {
         continue;
       }
       let source = fs::read_to_string(&path).unwrap();
       for test_case in parse_test(source.as_str()) {
-        let ast = djot::parse_opts(opts.clone(), &test_case.djot);
-        let got = djot::to_html(&ast);
+        let mut debug = String::new();
+        let parse = djot::parse_opts(opts.parse.clone(), &test_case.djot);
+        debug.push_str(&parse.debug);
+        if opts.debug_ast {
+          debug.push_str(&parse.ast.to_json());
+        }
+        let got = djot::to_html(&parse.ast);
         let want = test_case.html.as_str();
         let ref_html = to_ref_html(&test_case.djot);
         if want != ref_html.as_str() {
           panic!(
-            "Reference mismatch in {}\nRef:\n{ref_html}-----\nWant:\n{want}-----",
+            "\nReference mismatch in {}\nRef:\n{ref_html}-----\nWant:\n{want}-----\n",
             path.display()
           )
         }
         if got.as_str() != want {
-          panic!(
-            "Mismatch in {}\nSource:\n{source}-----\nWant:\n{want}-----\nGot:\n{got}-----",
+          let mut msg = format!(
+            "\nMismatch in {}\nSource:\n{source}-----\nWant:\n{want}-----\nGot:\n{got}-----\n",
             path.display()
-          )
+          );
+          if !debug.is_empty() {
+            msg = format!("{msg}Debug:\n{debug}-----\n")
+          }
+          panic!("{msg}")
         }
+        total += 1;
       }
     }
   }
+  eprintln!("total tests: {total}");
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct TestCase {
   djot: String,
   html: String,
 }
 
+#[derive(Debug)]
 enum ParseState {
   Init,
   Djot(TestCase, usize),
@@ -63,6 +82,9 @@ fn parse_test(source: &str) -> Vec<TestCase> {
   let mut state = ParseState::Init;
   for line in source.lines() {
     state = match state {
+      ParseState::Init if line == "STOP" => {
+        break;
+      }
       ParseState::Init => match parse_fence(line) {
         Some(fence) => ParseState::Djot(TestCase::default(), fence),
         None => ParseState::Init,
@@ -95,7 +117,7 @@ fn parse_test(source: &str) -> Vec<TestCase> {
 }
 
 fn parse_fence(line: &str) -> Option<usize> {
-  if line.bytes().all(|it| it == b'`') {
+  if line.bytes().all(|it| it == b'`') && line.len() > 0 {
     Some(line.len())
   } else {
     None

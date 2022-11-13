@@ -1,5 +1,5 @@
 use crate::{
-  ast::{CodeBlock, Doc, Image, Link, Para, Str, Tag, TagKind},
+  ast::{CodeBlock, Doc, Image, Link, Para, Str, Strong, Tag, TagKind, Emph},
   patterns::capture2,
   Match,
 };
@@ -25,6 +25,8 @@ impl Ctx {
       "linktext" => Link { destination: String::new() }.into(),
       "code_block" => CodeBlock { text: String::new() }.into(),
       "destination" => Doc {}.into(),
+      "strong" => Strong {}.into(),
+      "emph" => Emph {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {

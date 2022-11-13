@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{
   inline,
   patterns::{find, find_at, PatMatch},
@@ -24,6 +26,8 @@ pub struct Parser {
   last_matched_container: usize,
   opts: ParseOpts,
   finished_line: bool,
+
+  pub(crate) debug: String,
 }
 
 struct Spec {
@@ -276,7 +280,8 @@ impl Parser {
     if self.opts.debug_matches {
       for &(s, e, a) in &self.matches {
         let m = format!("{a} {}-{}", s + 1, if e == s { e + 1 } else { e });
-        eprintln!("{m:<20} {:?}", self.subject.get(s..e).unwrap_or_default())
+        writeln!(self.debug, "{m:<20} {:?}", self.subject.get(s..e).unwrap_or_default())
+          .expect("str format can't fail");
       }
     }
   }

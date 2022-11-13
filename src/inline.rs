@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::{
   matches_pattern, minus,
-  patterns::{find_at, PatMatch},
+  patterns::{find_at, PatMatch, is_space},
   plus, Match, ParseOpts, Warn,
 };
 
@@ -90,8 +90,8 @@ impl Parser {
     defaultmatch: &'static str,
   ) -> usize {
     let mut can_open = find_at(&self.subject, "^%S", pos + 1).is_match;
-    let mut _can_close = find_at(&self.subject, "^%S", pos - 1).is_match;
-    let has_open_marker = matches_pattern(self.matches.get(&(pos - 1)), "open_marker");
+    let mut _can_close = !self.subject[..pos].ends_with(is_space);
+    let has_open_marker = pos != 0 && matches_pattern(self.matches.get(&(pos - 1)), "open_marker");
     let hash_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
     let mut endcloser = pos;
     let mut startopener = pos;
@@ -336,10 +336,10 @@ impl Parser {
   pub fn feed(&mut self, spos: usize, endpos: usize) {
     let special = "[%]%[\\`{}_*()!<>~^:=+$\r\n'\".-]";
     let subject = self.subject.clone();
-    if self.firstpos == 0 || spos < self.firstpos {
+    if spos < self.firstpos {
       self.firstpos = spos
     }
-    if self.lastpos == 0 || endpos > self.lastpos {
+    if endpos > self.lastpos {
       self.lastpos = endpos
     }
     let mut pos = spos;

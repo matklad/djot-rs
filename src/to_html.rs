@@ -48,6 +48,16 @@ impl<'a> Ctx<'a> {
         self.out_escape_html(&code_block.text);
         self.out("</code></pre>");
       }
+      TagKind::Strong(_) => {
+        self.render_tag("strong", &tag.attrs);
+        self.render_children(tag);
+        self.out("</strong>");
+      }
+      TagKind::Emph(_) => {
+        self.render_tag("em", &tag.attrs);
+        self.render_children(tag);
+        self.out("</em>");
+      }
       TagKind::SoftBreak(_) => self.out("\n"),
       TagKind::Str(str) => self.out_escape_html(&str.text),
     }

@@ -42,3 +42,7 @@ pub fn capture2<'a>(subject: &'a str, pat: &'static str) -> (&'a str, &'a str) {
   let captures = pat.match_captures(&subject);
   (captures.get(1), captures.get(2))
 }
+
+pub(crate) fn is_space(c: char) -> bool {
+  " \n\t".contains(c)
+}

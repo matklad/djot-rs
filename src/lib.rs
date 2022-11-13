@@ -8,7 +8,7 @@ mod to_ast;
 mod to_html;
 
 pub fn parse(text: &str) -> ast::Tag {
-  parse_opts(ParseOpts::default(), text)
+  parse_opts(ParseOpts::default(), text).ast
 }
 
 #[derive(Default, Clone)]
@@ -16,10 +16,17 @@ pub struct ParseOpts {
   pub debug_matches: bool,
 }
 
-pub fn parse_opts(opts: ParseOpts, text: &str) -> ast::Tag {
+pub struct Parse {
+  pub ast: ast::Tag,
+  pub debug: String,
+}
+
+pub fn parse_opts(opts: ParseOpts, text: &str) -> Parse {
   let mut p = block::Parser::new(text.to_string(), opts, None);
   p.parse();
-  p.to_ast()
+  let debug = p.debug.clone();
+  let ast = p.to_ast();
+  Parse { ast, debug }
 }
 
 pub fn to_html(tag: &ast::Tag) -> String {
