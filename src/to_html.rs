@@ -63,8 +63,13 @@ impl<'a> Ctx<'a> {
         self.render_children(tag);
         self.out("&rdquo;");
       }
-      TagKind::SoftBreak(_) => self.out("\n"),
+      TagKind::Softbreak(_) => self.out("\n"),
       TagKind::Str(str) => self.out_escape_html(&str.text),
+      TagKind::Verbatim(verbatim) => {
+        self.render_tag("code", &tag.attrs);
+        self.out_escape_html(&verbatim.text);
+        self.out("</code>");
+    },
     }
   }
 

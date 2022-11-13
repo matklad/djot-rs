@@ -318,7 +318,16 @@ impl Parser {
           return Some(pos + 1);
         }
       }
-      b':' => todo!(),
+      b':' => {
+        let m = bounded_find(&self.subject, "^%:[%w_+-]%:", pos, endpos);
+        if m.is_match {
+          self.add_match(m.start, m.end, Atom::Emoji);
+          return Some(m.end);
+        } else {
+          self.add_match(pos, pos + 1, Atom::Str);
+          return Some(pos + 1);
+        }
+      }
       b'+' => todo!(),
       b'=' => todo!(),
       b'\'' => todo!(),
@@ -387,7 +396,7 @@ impl Parser {
               pos = endchar
             }
           } else {
-            self.add_match(pos, pos, Atom::Str);
+            self.add_match(pos, pos + 1, Atom::Str);
             pos = pos + 1
           }
         } else {
@@ -402,7 +411,7 @@ impl Parser {
     let mut m_last = Match::new(0..0, Atom::Ellipses); // TODO
     for i in self.firstpos..=self.lastpos {
       if let Some(&m) = self.matches.get(&i) {
-        if m.is(Atom::Str) && m_last.is(Atom::Str) && m_last.s == m.s {
+        if m.is(Atom::Str) && m_last.is(Atom::Str) && m_last.e == m.s {
           (*sorted.last_mut().unwrap()).e = m.e;
           m_last.e = m.e;
         } else {

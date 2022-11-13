@@ -1,6 +1,9 @@
 use crate::{
   annot::{Annot, Atom, Comp},
-  ast::{CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Str, Strong, Tag, TagKind},
+  ast::{
+    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Softbreak, Str, Strong, Tag, TagKind,
+    Verbatim,
+  },
   Match,
 };
 
@@ -28,6 +31,7 @@ impl Ctx {
       Comp::Strong => Strong {}.into(),
       Comp::Emph => Emph {}.into(),
       Comp::DoubleQuoted => DoubleQuoted {}.into(),
+      Comp::Verbatim => Verbatim { text: String::new() }.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
@@ -60,18 +64,20 @@ impl Ctx {
                   *destination = get_string_content(&dest);
                 }
               }
-              Comp::CodeBlock => {
-                result.cast::<CodeBlock>().text = get_string_content(&result);
-              }
+              Comp::CodeBlock => result.cast::<CodeBlock>().text = get_string_content(&result),
+              Comp::Verbatim => result.cast::<Verbatim>().text = get_string_content(&result),
               _ => (),
             }
             node.children.push(result)
           }
-          Annot::Sub(_) => {
-            panic!("unhandled {}", m.a)
-          }
-          Annot::Atom(_) => {
-            node.children.push(Tag::new(Str::new(&self.subject[m.s..m.e])));
+          Annot::Sub(_) => panic!("unhandled {}", m.a),
+          Annot::Atom(atom) => {
+            let tag = match atom {
+              Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
+              Atom::Softbreak => Tag::new(Softbreak {}),
+              _ => todo!("todo atom: {atom}"),
+            };
+            node.children.push(tag);
             self.idx += 1;
           }
         }
@@ -84,7 +90,7 @@ impl Ctx {
 pub(crate) fn get_string_content(dest: &Tag) -> String {
   let mut res = String::new();
   match &dest.kind {
-    TagKind::SoftBreak(_) => res.push('\n'),
+    TagKind::Softbreak(_) => res.push('\n'),
     TagKind::Str(str) => res.push_str(&str.text),
     _ => (),
   }

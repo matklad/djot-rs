@@ -24,8 +24,8 @@ struct TestOpts {
 #[test]
 fn ref_tests() {
   let opts = TestOpts {
-    only: "",
-    only_nth: !0,
+    only: "verbatim",
+    only_nth: 2,
     debug_ast: false,
     ref_matches: true,
     parse: djot::ParseOpts { debug_matches: true },
@@ -127,7 +127,6 @@ fn parse_test(source: &str) -> Vec<TestCase> {
     };
   }
 
-  assert!(!res.is_empty(), "empty test case:\n{source}-----");
   res
 }
 
