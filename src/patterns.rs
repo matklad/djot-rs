@@ -36,12 +36,6 @@ pub fn find_at<'a>(subject: &'a str, pat: &'static str, start: usize) -> PatMatc
   PatMatch { start: range.start + start, end: range.end + start, is_match, cap1: "", cap2: "" }
 }
 
-pub fn capture2<'a>(subject: &'a str, pat: &'static str) -> (&'a str, &'a str) {
-  let mut pat = lua_patterns::LuaPattern::new(pat);
-  pat.matches(&subject);
-  let captures = pat.match_captures(&subject);
-  (captures.get(1), captures.get(2))
-}
 
 pub(crate) fn is_space(c: char) -> bool {
   " \n\t".contains(c)

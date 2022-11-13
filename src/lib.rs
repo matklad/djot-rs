@@ -1,5 +1,8 @@
-use std::rc::Rc;
+use std::{ops::Range, rc::Rc};
 
+use annot::Annot;
+
+mod annot;
 mod patterns;
 mod block;
 mod inline;
@@ -42,25 +45,21 @@ pub fn to_html_opts(opts: &HtmlOpts, tag: &ast::Tag) -> String {
 
 pub type Warn = Rc<dyn Fn()>;
 
-pub type Match = (usize, usize, &'static str);
-
-fn matches_pattern(m: Option<&Match>, pat: &'static str) -> bool {
-  let Some(&(_, _, annotation)) = m else { return false; };
-  annotation == pat
+#[derive(Debug, Clone, Copy)]
+struct Match {
+  s: usize,
+  e: usize,
+  a: Annot,
 }
 
-fn plus(a: &'static str) -> &'static str {
-  match a {
-    "emph" => "+emph",
-    "strong" => "+strong",
-    _ => panic!("{a}"),
+impl Match {
+  fn new(range: Range<usize>, a: impl Into<Annot>) -> Match {
+    Match { s: range.start, e: range.end, a: a.into() }
   }
-}
-
-fn minus(a: &'static str) -> &'static str {
-  match a {
-    "emph" => "-emph",
-    "strong" => "-strong",
-    _ => panic!("{a}"),
+  fn is(&self, annot: impl Into<Annot>) -> bool {
+    self.a == annot.into()
+  }
+  fn is_not(&self, annot: impl Into<Annot>) -> bool {
+    !self.is(annot)
   }
 }

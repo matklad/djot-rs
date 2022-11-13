@@ -1,12 +1,12 @@
 use crate::{
-  ast::{CodeBlock, Doc, Image, Link, Para, Str, Strong, Tag, TagKind, Emph},
-  patterns::capture2,
+  annot::{Annot, Atom, Comp},
+  ast::{CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Str, Strong, Tag, TagKind},
   Match,
 };
 
 impl crate::block::Parser {
   pub fn to_ast(self) -> Tag {
-    Ctx { subject: self.subject, matches: self.matches, idx: 0 }.get_node("doc")
+    Ctx { subject: self.subject, matches: self.matches, idx: 0 }.get_node(Comp::Doc)
   }
 }
 
@@ -17,63 +17,63 @@ struct Ctx {
 }
 
 impl Ctx {
-  fn get_node(&mut self, maintag: &str) -> Tag {
+  fn get_node(&mut self, maintag: Comp) -> Tag {
     let mut node = Tag::new(match maintag {
-      "doc" => TagKind::Doc(Doc {}),
-      "para" => Para {}.into(),
-      "imagetext" => Image { destination: String::new() }.into(),
-      "linktext" => Link { destination: String::new() }.into(),
-      "code_block" => CodeBlock { text: String::new() }.into(),
-      "destination" => Doc {}.into(),
-      "strong" => Strong {}.into(),
-      "emph" => Emph {}.into(),
+      Comp::Doc => TagKind::Doc(Doc {}),
+      Comp::Para => Para {}.into(),
+      Comp::Imagetext => Image { destination: String::new() }.into(),
+      Comp::Linktext => Link { destination: String::new() }.into(),
+      Comp::CodeBlock => CodeBlock { text: String::new() }.into(),
+      Comp::Destination => Doc {}.into(),
+      Comp::Strong => Strong {}.into(),
+      Comp::Emph => Emph {}.into(),
+      Comp::DoubleQuoted => DoubleQuoted {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
-      let (startpos, endpos, annot) = self.matches[self.idx];
-      let (mode, tag) = capture2(annot, "^([-+]?)(.*)");
+      let m = self.matches[self.idx];
 
-      if matches!(tag, "blankline" | "image_marker") {
+      if m.is(Atom::Blankline) || m.is(Atom::ImageMarker) {
         self.idx += 1;
         continue;
       }
 
-      if mode == "-" && tag == maintag {
+      if m.is(maintag.sub()) {
         self.idx += 1;
         return node;
       } else {
-        if mode == "+" {
-          let _startidx = self.idx;
-          self.idx += 1;
-          let mut result = self.get_node(tag);
-          match tag {
-            "imagetext" | "linktext" => {
-              let destination = match tag {
-                "imagetext" => &mut result.cast::<Image>().destination,
-                "linktext" => &mut result.cast::<Link>().destination,
-                _ => unreachable!(),
-              };
-              let (_, _, nextannot) = self.matches[self.idx];
-              match nextannot {
-                "+destination" => {
+        match m.a {
+          Annot::Add(tag) => {
+            let _startidx = self.idx;
+            self.idx += 1;
+            let mut result = self.get_node(tag);
+            match tag {
+              Comp::Imagetext | Comp::Linktext => {
+                let destination = match tag {
+                  Comp::Imagetext => &mut result.cast::<Image>().destination,
+                  Comp::Linktext => &mut result.cast::<Link>().destination,
+                  _ => unreachable!(),
+                };
+                if self.matches[self.idx].is(Comp::Destination.add()) {
                   self.idx += 1;
-                  let dest = self.get_node("destination");
+                  let dest = self.get_node(Comp::Destination);
                   *destination = get_string_content(&dest);
                 }
-                _ => (),
               }
+              Comp::CodeBlock => {
+                result.cast::<CodeBlock>().text = get_string_content(&result);
+              }
+              _ => (),
             }
-            "code_block" => {
-              result.cast::<CodeBlock>().text = get_string_content(&result);
-            }
-            _ => (),
+            node.children.push(result)
           }
-          node.children.push(result)
-        } else if mode == "-" {
-          panic!("unhandled {annot}")
-        } else {
-          node.children.push(Tag::new(Str::new(&self.subject[startpos..endpos])));
-          self.idx += 1;
+          Annot::Sub(_) => {
+            panic!("unhandled {}", m.a)
+          }
+          Annot::Atom(_) => {
+            node.children.push(Tag::new(Str::new(&self.subject[m.s..m.e])));
+            self.idx += 1;
+          }
         }
       }
     }

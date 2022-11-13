@@ -21,7 +21,7 @@ struct TestOpts {
 #[test]
 fn ref_tests() {
   let opts =
-    TestOpts { only: "emph", debug_ast: true, parse: djot::ParseOpts { debug_matches: true } };
+    TestOpts { only: "", debug_ast: true, parse: djot::ParseOpts { debug_matches: true } };
 
   let sh = xshell::Shell::new().unwrap();
   let mut total = 0;

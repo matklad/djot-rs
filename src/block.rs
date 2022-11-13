@@ -1,6 +1,7 @@
 use std::fmt::Write;
 
 use crate::{
+  annot::{Annot, Atom, Comp},
   inline,
   patterns::{find, find_at, PatMatch},
   Match, ParseOpts, Warn,
@@ -20,7 +21,7 @@ pub struct Parser {
   startline: usize,
   starteol: usize,
   endeol: usize,
-  pub matches: Vec<Match>,
+  pub(crate) matches: Vec<Match>,
   containers: Vec<Container>,
   pos: usize,
   last_matched_container: usize,
@@ -64,12 +65,12 @@ static SPECS: &[Spec] = &[
         inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
         indent: 0,
       });
-      p.add_match(p.pos, p.pos, "+para");
+      p.add_match(p.pos, p.pos, Comp::Para.add());
       true
     },
     close: |p| {
       p.get_inline_matches();
-      p.add_match(p.pos - 1, p.pos - 1, "-para");
+      p.add_match(p.pos - 1, p.pos - 1, Comp::Para.sub());
       p.containers.pop();
     },
   },
@@ -96,13 +97,13 @@ static SPECS: &[Spec] = &[
         inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
         indent: 0,
       });
-      p.add_match(p.pos, p.pos + 3, "+code_block");
+      p.add_match(p.pos, p.pos + 3, Comp::CodeBlock.add());
       p.pos = p.pos + 2;
       p.finished_line = true;
       true
     },
     close: |p| {
-      p.add_match(p.pos - 3, p.pos, "-code_block");
+      p.add_match(p.pos - 3, p.pos, Comp::CodeBlock.sub());
       p.containers.pop();
     },
   },
@@ -129,8 +130,8 @@ impl Parser {
     find_at(&self.subject, pat, self.pos)
   }
 
-  fn add_match(&mut self, startpos: usize, endpos: usize, annotation: &'static str) {
-    self.matches.push((startpos, endpos, annotation))
+  fn add_match(&mut self, startpos: usize, endpos: usize, annot: impl Into<Annot>) {
+    self.matches.push(Match::new(startpos..endpos, annot))
   }
 
   fn add_container(&mut self, container: Container) {
@@ -243,7 +244,7 @@ impl Parser {
             if is_blank {
               if !new_starts {
                 // need to track these for tight/loose lists
-                self.add_match(self.pos, self.endeol, "blankline");
+                self.add_match(self.pos, self.endeol, Atom::Blankline);
               }
             } else {
               para_spec.open(self);
@@ -257,7 +258,7 @@ impl Parser {
                 // get back the leading spaces we gobbled
                 startpos = startpos - (self.indent - tip.indent)
               }
-              self.add_match(startpos, self.endeol, "str")
+              self.add_match(startpos, self.endeol, Atom::Str)
             } else if tip.spec.content == "inline" {
               if !is_blank {
                 tip.inline_parser.feed(self.pos, self.endeol)
@@ -278,9 +279,9 @@ impl Parser {
       cont.spec.close(self)
     }
     if self.opts.debug_matches {
-      for &(s, e, a) in &self.matches {
-        let m = format!("{a} {}-{}", s + 1, if e == s { e + 1 } else { e });
-        writeln!(self.debug, "{m:<20} {:?}", self.subject.get(s..e).unwrap_or_default())
+      for &m in &self.matches {
+        let ms = format!("{} {}-{}", m.a, m.s + 1, if m.e == m.s { m.e + 1 } else { m.e });
+        writeln!(self.debug, "{ms:<20} {:?}", self.subject.get(m.s..m.e).unwrap_or_default())
           .expect("str format can't fail");
       }
     }

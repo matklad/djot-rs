@@ -58,6 +58,11 @@ impl<'a> Ctx<'a> {
         self.render_children(tag);
         self.out("</em>");
       }
+      TagKind::DoubleQuoted(_) => {
+        self.out("&ldquo;");
+        self.render_children(tag);
+        self.out("&rdquo;");
+      }
       TagKind::SoftBreak(_) => self.out("\n"),
       TagKind::Str(str) => self.out_escape_html(&str.text),
     }
