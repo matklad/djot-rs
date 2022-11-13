@@ -118,7 +118,7 @@ _({_foo_})_
 .
 <p><em>(<em>foo</em>)</em></p>
 ```
-STOP
+
 ```
 _(*foo*)_
 .
@@ -144,7 +144,7 @@ bar</em></p>
 ```
 
 Inline content allowed:
-
+STOP
 ```
 *foo [link](url) `*`*
 .
