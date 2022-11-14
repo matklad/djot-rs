@@ -142,10 +142,6 @@ impl Tag {
     self
   }
 
-  pub fn to_json(&self) -> String {
-    serde_json::to_string_pretty(self).unwrap()
-  }
-
   pub(crate) fn cast<T>(&mut self) -> &mut T
   where
     Self: Cast<T>,
@@ -162,16 +158,4 @@ impl Str {
 
 pub(crate) trait Cast<T> {
   fn cast(&mut self) -> &mut T;
-}
-
-#[test]
-fn serialization() {
-  let doc = Tag::new(Doc {}).with_children(vec![
-    Tag::new(Heading { level: 1 })
-      .with_attrs(Attrs::from([("id".to_string(), "Try-djot".to_string())]))
-      .with_children(vec![Tag::new(Str::new("Try djot"))]),
-    Tag::new(Para {}).with_children(vec![Tag::new(Str::new("Hello"))]),
-  ]);
-
-  eprintln!("{}", doc.to_json())
 }

@@ -15,7 +15,6 @@ fn to_ref_html(source: &str, matches: bool) -> String {
 
 struct TestOpts {
   debug_ast: bool,
-  ast_json: bool,
   ref_matches: bool,
   parse: djot::ParseOpts,
 }
@@ -24,7 +23,6 @@ struct TestOpts {
 fn ref_tests() {
   let opts = TestOpts {
     debug_ast: false,
-    ast_json: true,
     ref_matches: true,
     parse: djot::ParseOpts { debug_matches: true },
   };
@@ -41,16 +39,12 @@ fn ref_tests() {
           continue;
         }
         let mut debug = String::new();
-        let parse = djot::parse_opts(opts.parse.clone(), &test_case.djot);
-        debug.push_str(&parse.debug);
+        let doc = djot::Document::parse_opts(opts.parse.clone(), &test_case.djot);
+        debug.push_str(&doc.debug);
         if opts.debug_ast {
-          debug.push_str(&parse.ast.to_json());
+          debug.push_str(&doc.to_json());
         }
-        if opts.ast_json {
-          debug.push_str("Json:\n");
-          debug.push_str(&parse.ast.to_json());
-        }
-        let got = djot::to_html(&parse.ast);
+        let got = doc.to_html();
         let want = test_case.html.as_str();
         let ref_html = to_ref_html(&test_case.djot, false);
         if opts.ref_matches {

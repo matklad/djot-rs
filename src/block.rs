@@ -4,12 +4,11 @@ use crate::{
   annot::{Annot, Atom, Comp},
   inline,
   patterns::{find, find_at, PatMatch},
-  Match, ParseOpts, Warn,
+  Match, ParseOpts,
 };
 
 #[derive(Default)]
 pub struct Parser {
-  warn: Option<Warn>,
   pub subject: String,
   indent: usize,
   startline: usize,
@@ -55,9 +54,7 @@ impl Container for Para {
     Self: Sized,
   {
     p.add_match(p.pos, p.pos, Comp::Para.add());
-    Some(Box::new(Para {
-      inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone(), p.warn.clone()),
-    }))
+    Some(Box::new(Para { inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone()) }))
   }
 
   fn cont(&mut self, p: &mut Parser) -> bool {
@@ -143,14 +140,13 @@ impl Container for ReferenceDefinition {
 }
 
 impl Parser {
-  pub fn new(mut subject: String, opts: ParseOpts, warn: Option<Warn>) -> Parser {
+  pub fn new(mut subject: String, opts: ParseOpts) -> Parser {
     if !find(&subject, "[\r\n]$").is_match {
       subject.push('\n');
     }
     let mut res = Parser::default();
     res.subject = subject;
     res.opts = opts;
-    res.warn = warn;
     res
   }
 

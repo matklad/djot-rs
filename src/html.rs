@@ -1,12 +1,12 @@
 use crate::{
   ast::{Attrs, Tag, TagKind},
-  to_ast::get_string_content,
-  HtmlOpts,
+  tree::get_string_content,
+  Document, HtmlOpts,
 };
 
-pub(crate) fn to_html(opts: &HtmlOpts, tag: &Tag) -> String {
+pub(crate) fn convert(opts: &HtmlOpts, doc: &Document) -> String {
   let mut ctx = Ctx { opts, res: String::new() };
-  ctx.render(tag);
+  ctx.render_doc(doc);
   ctx.res
 }
 
@@ -16,6 +16,11 @@ struct Ctx<'a> {
   res: String,
 }
 impl<'a> Ctx<'a> {
+  fn render_doc(&mut self, doc: &Document) {
+    for child in &doc.children {
+      self.render(child)
+    }
+  }
   fn render(&mut self, tag: &Tag) {
     match &tag.kind {
       TagKind::Doc(_doc) => self.render_children(tag),

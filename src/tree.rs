@@ -4,14 +4,14 @@ use crate::{
     CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, ReferenceDefinition, ReferenceKey,
     ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Verbatim,
   },
+  block,
   patterns::find,
-  Match,
+  Document, Match,
 };
 
-impl crate::block::Parser {
-  pub fn to_ast(self) -> Tag {
-    Ctx { subject: self.subject, matches: self.matches, idx: 0 }.get_node(Comp::Doc)
-  }
+pub(crate) fn build(p: block::Parser) -> Document {
+  let tag = Ctx { subject: p.subject, matches: p.matches, idx: 0 }.get_node(Comp::Doc);
+  Document { children: tag.children, debug: p.debug }
 }
 
 struct Ctx {
