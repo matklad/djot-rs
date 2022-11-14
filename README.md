@@ -18,3 +18,13 @@ spaces, just try to be close to the original code.
 
 There are some tests, run with `cargo test`. We are using the same test suite as
 the upstream project (see `.test` files in `tests/data`)
+
+## Aspirations
+
+* "Easy", obvious API -- no streaming parsing, no allocation minimization, just
+  gives you a full ast
+* core + alloc. We don't need OS. Getting rid of the allocator would be nice, but not for this library.
+* in general, leave pulldown-djot to someone else (or to the next iteration of this library)
+* djot.ts module for convenience
+* typescript extensible visitor API for rendering: `./djot.ts intput.adoc --template slides.ts`
+  `ast.to_html({ code_block: (tag) => { ... }})`.
