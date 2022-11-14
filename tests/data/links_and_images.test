@@ -6,7 +6,7 @@
 .
 <p><a href="url">basic <em>link</em></a></p>
 ```
-STOP
+
 ```
 ![basic _image_][a_b_]
 
@@ -14,7 +14,7 @@ STOP
 .
 <p><img alt="basic image" src="url"></p>
 ```
-
+STOP
 ```
 [link][]
 

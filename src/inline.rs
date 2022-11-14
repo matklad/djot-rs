@@ -294,7 +294,7 @@ impl Parser {
                 self.add_match(opener.subspos, opener.subepos, Comp::Linktext.sub());
               }
               self.add_match(startdest, startdest + 1, Comp::Destination.add());
-              self.add_match(enddest, enddest + 1, Comp::Destination.add());
+              self.add_match(enddest, enddest + 1, Comp::Destination.sub());
               self.destination = false;
               // convert all matches to str
               self.str_matches(opener.subepos + 1, pos);

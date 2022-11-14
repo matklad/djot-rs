@@ -40,7 +40,7 @@ impl Ctx {
     while self.idx < self.matches.len() {
       let m = self.matches[self.idx];
 
-      if m.is(Atom::Blankline) || m.is(Atom::ImageMarker) {
+      if m.is(Atom::Blankline) || m.is(Atom::ImageMarker) || m.is(Atom::Escape) {
         self.idx += 1;
         continue;
       }
@@ -93,7 +93,7 @@ impl Ctx {
             }
             node.children.push(result)
           }
-          Annot::Sub(_) => panic!("unhandled {}", m.a),
+          Annot::Sub(_) => panic!("unexpected {}", m.a),
           Annot::Atom(atom) => {
             let tag = match atom {
               Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
