@@ -52,7 +52,7 @@ impl<'a> Ctx<'a> {
         self.render_tag("pre", &tag.attrs);
         self.render_tag("code", &Attrs::default());
         self.out_escape_html(&code_block.text);
-        self.out("</code></pre>");
+        self.out("</code></pre>\n");
       }
       TagKind::Strong(_) => {
         self.render_tag("strong", &tag.attrs);
