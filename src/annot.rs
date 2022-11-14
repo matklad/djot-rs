@@ -21,6 +21,8 @@ pub(crate) enum Atom {
   FootnoteReference,
   OpenMarker,
   Emoji,
+  ReferenceKey,
+  ReferenceValue,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -40,6 +42,7 @@ pub(crate) enum Comp {
   Emph,
   Strong,
   DoubleQuoted,
+  ReferenceDefinition,
 }
 
 impl PartialEq<Atom> for Annot {
@@ -82,6 +85,8 @@ impl fmt::Display for Atom {
       Atom::FootnoteReference => "footnote_reference",
       Atom::OpenMarker => "open_marker",
       Atom::Emoji => "emoji",
+      Atom::ReferenceKey => "reference_key",
+      Atom::ReferenceValue => "reference_value",
     };
     f.write_str(s)
   }
@@ -114,6 +119,7 @@ impl fmt::Display for Comp {
       Comp::Emph => "emph",
       Comp::Strong => "strong",
       Comp::DoubleQuoted => "double_quoted",
+      Comp::ReferenceDefinition => "reference_definition",
     };
     f.write_str(s)
   }

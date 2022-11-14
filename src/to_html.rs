@@ -81,6 +81,7 @@ impl<'a> Ctx<'a> {
         self.render_children(tag);
         self.out("</span>");
       }
+      TagKind::ReferenceDefinition(_) | TagKind::ReferenceKey(_) | TagKind::ReferenceValue(_) => (),
     }
   }
 

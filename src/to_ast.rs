@@ -1,8 +1,8 @@
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, Softbreak, Span, Str, Strong, Tag,
-    TagKind, Verbatim,
+    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, ReferenceDefinition, ReferenceKey,
+    ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Verbatim,
   },
   patterns::find,
   Match,
@@ -34,6 +34,7 @@ impl Ctx {
       Comp::DoubleQuoted => DoubleQuoted {}.into(),
       Comp::Verbatim => Verbatim { text: String::new() }.into(),
       Comp::Reference => Span {}.into(),
+      Comp::ReferenceDefinition => ReferenceDefinition {}.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
@@ -96,6 +97,12 @@ impl Ctx {
           Annot::Atom(atom) => {
             let tag = match atom {
               Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
+              Atom::ReferenceKey => {
+                Tag::new(ReferenceKey { text: self.subject[m.s..m.e].to_string() })
+              }
+              Atom::ReferenceValue => {
+                Tag::new(ReferenceValue { text: self.subject[m.s..m.e].to_string() })
+              }
               Atom::Softbreak => Tag::new(Softbreak {}),
               _ => todo!("todo atom: {atom}"),
             };

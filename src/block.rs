@@ -36,7 +36,8 @@ trait Container {
   fn close(self: Box<Self>, p: &mut Parser);
 }
 
-const CONTAINERS: &[fn(&mut Parser) -> Option<Box<dyn Container>>] = &[Para::open, CodeBlock::open];
+const CONTAINERS: &[fn(&mut Parser) -> Option<Box<dyn Container>>] =
+  &[Para::open, CodeBlock::open, ReferenceDefinition::open];
 
 struct Para {
   inline_parser: inline::Parser,
@@ -101,6 +102,43 @@ impl Container for CodeBlock {
 
   fn close(self: Box<Self>, p: &mut Parser) {
     p.add_match(p.pos - 3, p.pos, Comp::CodeBlock.sub());
+  }
+}
+
+struct ReferenceDefinition {
+  _indent: usize,
+}
+
+impl Container for ReferenceDefinition {
+  fn content(&self) -> &'static str {
+    ""
+  }
+
+  fn open(p: &mut Parser) -> Option<Box<dyn Container>>
+  where
+    Self: Sized,
+  {
+    let m = p.find("^[[]([^\r\n]*)%]:[ \t]*(%S*)");
+    if !m.is_match {
+      return None;
+    }
+    p.add_match(m.start, m.start, Comp::ReferenceDefinition.add());
+    p.add_match(m.start, m.start + m.cap1.len() + 1, Atom::ReferenceKey);
+    p.add_match(m.end - m.cap2.len(), m.end, Atom::ReferenceValue);
+    p.pos = m.end;
+    Some(Box::new(ReferenceDefinition { _indent: p.indent }))
+  }
+
+  fn cont(&mut self, _p: &mut Parser) -> bool {
+    false
+  }
+
+  fn close(self: Box<Self>, p: &mut Parser) {
+    p.add_match(p.pos, p.pos, Comp::ReferenceDefinition.sub())
+  }
+
+  fn inline_parser(&mut self) -> Option<&mut inline::Parser> {
+    None
   }
 }
 

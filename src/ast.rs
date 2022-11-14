@@ -13,7 +13,7 @@ pub struct Tag {
 }
 
 macro_rules!  tags {
-    ($($tag:ident),*) => {
+    ($($tag:ident,)*) => {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(tag = "tag", rename_all = "lowercase")]
 pub enum TagKind {$(
@@ -45,13 +45,16 @@ tags![
   Link,
   Image,
   CodeBlock,
+  ReferenceDefinition,
   Strong,
   Emph,
   Span,
   DoubleQuoted,
   Verbatim,
   Softbreak,
-  Str
+  Str,
+  ReferenceKey,
+  ReferenceValue,
 ];
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -87,6 +90,9 @@ pub struct CodeBlock {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct ReferenceDefinition {}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Softbreak {}
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -100,6 +106,16 @@ pub struct Span {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct DoubleQuoted {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ReferenceKey {
+  pub text: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ReferenceValue {
+  pub text: String,
+}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Verbatim {

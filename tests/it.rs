@@ -15,6 +15,7 @@ fn to_ref_html(source: &str, matches: bool) -> String {
 
 struct TestOpts {
   debug_ast: bool,
+  ast_json: bool,
   ref_matches: bool,
   parse: djot::ParseOpts,
 }
@@ -23,6 +24,7 @@ struct TestOpts {
 fn ref_tests() {
   let opts = TestOpts {
     debug_ast: false,
+    ast_json: true,
     ref_matches: true,
     parse: djot::ParseOpts { debug_matches: true },
   };
@@ -44,6 +46,10 @@ fn ref_tests() {
         if opts.debug_ast {
           debug.push_str(&parse.ast.to_json());
         }
+        if opts.ast_json {
+          debug.push_str("Json:\n");
+          debug.push_str(&parse.ast.to_json());
+        }
         let got = djot::to_html(&parse.ast);
         let want = test_case.html.as_str();
         let ref_html = to_ref_html(&test_case.djot, false);
@@ -53,14 +59,13 @@ fn ref_tests() {
         if want != ref_html.as_str() {
           panic!(
             "\nReference mismatch in {}\nRef:\n{ref_html}-----\nWant:\n{want}-----\n",
-            path.display()
+            file_stem
           )
         }
         if got.as_str() != want {
           let mut msg = format!(
             "\nMismatch in {}\nSource:\n{}-----\nWant:\n{want}-----\nGot:\n{got}-----\n",
-            path.display(),
-            test_case.djot,
+            file_stem, test_case.djot,
           );
           if !debug.is_empty() {
             msg = format!("{msg}Debug:\n{debug}-----\n")
