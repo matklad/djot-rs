@@ -1,14 +1,24 @@
-// TODO: this isn't a true copy
 
-````
 ```
+~~~
+code
+  block
+~~~
+.
+<pre><code>code
+  block
+</code></pre>
+```
+STOP
+````
+``` python
 x = y + 3
 ```
 .
-<pre><code>x = y + 3
+<pre><code class="language-python">x = y + 3
 </code></pre>
 ````
-STOP
+
 ````
   ``` python
   if true:

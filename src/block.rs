@@ -28,6 +28,9 @@ trait Container {
   fn inline_parser(&mut self) -> Option<&mut inline::Parser> {
     None
   }
+  fn restore_indent(&self) -> Option<usize> {
+    None
+  }
   fn open(p: &mut Parser) -> Option<Box<dyn Container>>
   where
     Self: Sized;
@@ -67,27 +70,39 @@ impl Container for Para {
   }
 }
 
-struct CodeBlock {}
+struct CodeBlock {
+  border: char,
+  indent: usize,
+}
 
 impl Container for CodeBlock {
   fn content(&self) -> &'static str {
     "text"
   }
+  fn restore_indent(&self) -> Option<usize> {
+    Some(self.indent)
+  }
   fn open(p: &mut Parser) -> Option<Box<dyn Container>>
   where
     Self: Sized,
   {
-    if !p.subject[p.pos..].starts_with("```\n") {
+    let border;
+    if p.find("^```\n").is_match {
+      border = '`';
+    } else if p.find("^~~~\n").is_match {
+      border = '~';
+    } else {
       return None;
     }
     p.add_match(p.pos, p.pos + 3, Comp::CodeBlock.add());
     p.pos = p.pos + 2;
     p.finished_line = true;
-    Some(Box::new(CodeBlock {}))
+    Some(Box::new(CodeBlock { border, indent: p.indent }))
   }
 
   fn cont(&mut self, p: &mut Parser) -> bool {
-    let m = p.find("^(```)[ \t]*[\r\n]");
+    let m =
+      if self.border == '`' { p.find("^(```)[ \t]*[\r\n]") } else { p.find("^(~~~)[ \t]*[\r\n]") };
     if m.is_match {
       p.pos = m.end - 1;
       p.finished_line = true;
@@ -276,12 +291,12 @@ impl Parser {
           }
 
           if let Some(tip) = containers.last_mut() {
-            if tip.content() == "text" {
-              let startpos = self.pos;
-              // if self.indent > tip.indent {
-              //   // get back the leading spaces we gobbled
-              //   startpos = startpos - (self.indent - tip.indent)
-              // }
+            if let Some(tip_indent) = tip.restore_indent() {
+              let mut startpos = self.pos;
+              if self.indent > tip_indent {
+                // get back the leading spaces we gobbled
+                startpos = startpos - (self.indent - tip_indent)
+              }
               self.add_match(startpos, self.endeol, Atom::Str)
             } else if let Some(inline_parser) = tip.inline_parser() {
               if !is_blank {
