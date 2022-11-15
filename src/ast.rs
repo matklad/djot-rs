@@ -52,6 +52,7 @@ tags![
   DoubleQuoted,
   Verbatim,
   Softbreak,
+  Url,
   Str,
   ReferenceKey,
   ReferenceValue,
@@ -115,6 +116,11 @@ pub struct ReferenceKey {
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ReferenceValue {
   pub text: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Url {
+  pub destination: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

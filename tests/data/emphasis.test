@@ -218,7 +218,7 @@ _`a_`b
 .
 <p>_<code>a_</code>b</p>
 ```
-STOP
+
 Autolinks take precedence:
 
 ```

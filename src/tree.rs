@@ -2,7 +2,7 @@ use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
     CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, ReferenceDefinition, ReferenceKey,
-    ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Verbatim,
+    ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Url, Verbatim,
   },
   block,
   patterns::find,
@@ -35,6 +35,7 @@ impl Ctx {
       Comp::Verbatim => Verbatim { text: String::new() }.into(),
       Comp::Reference => Span {}.into(),
       Comp::ReferenceDefinition => ReferenceDefinition {}.into(),
+      Comp::Url => Url { destination: String::new() }.into(),
       _ => panic!("unhandled {maintag}"),
     });
     while self.idx < self.matches.len() {
@@ -89,6 +90,7 @@ impl Ctx {
                 }
                 result.cast::<Verbatim>().text = text;
               }
+              Comp::Url => result.cast::<Url>().destination = get_string_content(&result),
               _ => (),
             }
             node.children.push(result)

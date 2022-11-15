@@ -75,6 +75,13 @@ impl<'a> Ctx<'a> {
         self.out("&rdquo;");
       }
       TagKind::Softbreak(_) => self.out("\n"),
+      TagKind::Url(url) => {
+        let mut attrs = Attrs::new();
+        attrs.insert("href".to_string(), url.destination.clone());
+        self.render_tag("a", &attrs);
+        self.render_children(tag);
+        self.out("</a>");
+      }
       TagKind::Str(str) => self.out_escape_html(&str.text),
       TagKind::Verbatim(verbatim) => {
         self.render_tag("code", &tag.attrs);
