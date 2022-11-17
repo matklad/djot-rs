@@ -27,7 +27,7 @@ impl Ctx {
       Comp::Para => Para {}.into(),
       Comp::Imagetext => Image { destination: None, reference: None }.into(),
       Comp::Linktext => Link { destination: None, reference: None }.into(),
-      Comp::CodeBlock => CodeBlock { text: String::new() }.into(),
+      Comp::CodeBlock => CodeBlock { text: String::new(), lang: None }.into(),
       Comp::Destination => Doc {}.into(),
       Comp::Strong => Strong {}.into(),
       Comp::Emph => Emph {}.into(),
@@ -106,6 +106,11 @@ impl Ctx {
                 Tag::new(ReferenceValue { text: self.subject[m.s..m.e].to_string() })
               }
               Atom::Softbreak => Tag::new(Softbreak {}),
+              Atom::CodeLanguage => {
+                node.cast::<CodeBlock>().lang = Some(self.subject[m.s..m.e].to_string());
+                self.idx += 1;
+                continue;
+              }
               _ => todo!("todo atom: {atom}"),
             };
             node.children.push(tag);

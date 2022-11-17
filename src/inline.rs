@@ -35,12 +35,12 @@ impl Opener {
 }
 
 // allow up to 3 captures...
-fn bounded_find<'a>(
-  subj: &'a str,
+fn bounded_find(
+  subj: &str,
   patt: &'static str,
   startpos: usize,
   endpos: usize,
-) -> PatMatch<'static> {
+) -> PatMatch {
   let mut m = find_at(subj, patt, startpos);
   if m.end > endpos {
     m = PatMatch::default()

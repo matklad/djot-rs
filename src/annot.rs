@@ -23,6 +23,7 @@ pub(crate) enum Atom {
   Emoji,
   ReferenceKey,
   ReferenceValue,
+  CodeLanguage,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -87,6 +88,7 @@ impl fmt::Display for Atom {
       Atom::Emoji => "emoji",
       Atom::ReferenceKey => "reference_key",
       Atom::ReferenceValue => "reference_value",
+      Atom::CodeLanguage => "code_language",
     };
     f.write_str(s)
   }

@@ -55,7 +55,11 @@ impl<'a> Ctx<'a> {
       }
       TagKind::CodeBlock(code_block) => {
         self.render_tag("pre", &tag.attrs);
-        self.render_tag("code", &Attrs::default());
+        let mut attrs = Attrs::default();
+        if let Some(lang) = &code_block.lang {
+          attrs.insert("class".to_string(), format!("language-{lang}"));
+        }
+        self.render_tag("code", &attrs);
         self.out_escape_html(&code_block.text);
         self.out("</code></pre>\n");
       }

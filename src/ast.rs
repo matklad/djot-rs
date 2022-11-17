@@ -87,6 +87,8 @@ pub struct Image {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CodeBlock {
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub lang: Option<String>,
   pub text: String,
 }
 

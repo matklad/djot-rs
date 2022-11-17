@@ -3,7 +3,7 @@ use std::fmt::Write;
 use crate::{
   annot::{Annot, Atom, Comp},
   inline,
-  patterns::{find, find_at, PatMatch},
+  patterns::{find, find_at, PatMatch, capture_at},
   Match, ParseOpts,
 };
 
@@ -86,15 +86,22 @@ impl Container for CodeBlock {
   where
     Self: Sized,
   {
-    let border;
-    if p.find("^```\n").is_match {
-      border = '`';
-    } else if p.find("^~~~\n").is_match {
+    let mut border = '`';
+    let mut m = p.capture("^```([ \t]*)([^%s`]*)[ \t]*[\r\n]");
+    if !m.is_match {
       border = '~';
-    } else {
+      m = p.capture("^~~~([ \t]*)([^%s`]*)[ \t]*[\r\n]");
+    }
+    if !m.is_match {
       return None;
     }
+    let lang = m.cap2;
+
     p.add_match(p.pos, p.pos + 3, Comp::CodeBlock.add());
+    if !lang.is_empty() {
+      p.add_match(lang.start, lang.end, Atom::CodeLanguage)
+    }
+
     p.pos = p.pos + 2;
     p.finished_line = true;
     Some(Box::new(CodeBlock { border, indent: p.indent }))
@@ -165,8 +172,12 @@ impl Parser {
     res
   }
 
-  fn find(&self, pat: &'static str) -> PatMatch<'static> {
+  fn find(&self, pat: &'static str) -> PatMatch {
     find_at(&self.subject, pat, self.pos)
+  }
+
+  fn capture(&self, pat: &'static str) -> PatMatch {
+    capture_at(&self.subject, pat, self.pos)
   }
 
   fn add_match(&mut self, startpos: usize, endpos: usize, annot: impl Into<Annot>) {
