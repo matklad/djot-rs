@@ -16,6 +16,7 @@ pub(crate) enum Atom {
   Blankline,
   ImageMarker,
   LeftDoubleQuote,
+  RightDoubleQuote,
   Ellipses,
   Softbreak,
   FootnoteReference,
@@ -24,6 +25,8 @@ pub(crate) enum Atom {
   ReferenceKey,
   ReferenceValue,
   CodeLanguage,
+  EmDash,
+  EnDash,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -44,6 +47,9 @@ pub(crate) enum Comp {
   Strong,
   DoubleQuoted,
   ReferenceDefinition,
+  Insert,
+  Delete,
+  Mark,
 }
 
 impl PartialEq<Atom> for Annot {
@@ -71,6 +77,100 @@ impl fmt::Display for Annot {
   }
 }
 
+impl Atom {
+  pub(crate) fn is_left_atom(self) -> bool {
+    match self {
+      Atom::Str
+      | Atom::Escape
+      | Atom::Hardbreak
+      | Atom::Nbsp
+      | Atom::Blankline
+      | Atom::ImageMarker
+      | Atom::Ellipses
+      | Atom::Softbreak
+      | Atom::FootnoteReference
+      | Atom::OpenMarker
+      | Atom::Emoji
+      | Atom::ReferenceKey
+      | Atom::ReferenceValue
+      | Atom::CodeLanguage
+      | Atom::EmDash
+      | Atom::EnDash => false,
+      Atom::LeftDoubleQuote => true,
+      Atom::RightDoubleQuote => false,
+    }
+  }
+
+  pub(crate) fn is_right_atom(self) -> bool {
+    match self {
+      Atom::Str
+      | Atom::Escape
+      | Atom::Hardbreak
+      | Atom::Nbsp
+      | Atom::Blankline
+      | Atom::ImageMarker
+      | Atom::Ellipses
+      | Atom::Softbreak
+      | Atom::FootnoteReference
+      | Atom::OpenMarker
+      | Atom::Emoji
+      | Atom::ReferenceKey
+      | Atom::ReferenceValue
+      | Atom::CodeLanguage
+      | Atom::EmDash
+      | Atom::EnDash => false,
+      Atom::LeftDoubleQuote => false,
+      Atom::RightDoubleQuote => true,
+    }
+  }
+
+  pub(crate) fn corresponding_left_atom(self) -> Self {
+    match self {
+      Atom::Str
+      | Atom::Escape
+      | Atom::Hardbreak
+      | Atom::Nbsp
+      | Atom::Blankline
+      | Atom::ImageMarker
+      | Atom::Ellipses
+      | Atom::Softbreak
+      | Atom::FootnoteReference
+      | Atom::OpenMarker
+      | Atom::Emoji
+      | Atom::ReferenceKey
+      | Atom::ReferenceValue
+      | Atom::CodeLanguage
+      | Atom::EmDash
+      | Atom::EnDash => self,
+      Atom::LeftDoubleQuote => self,
+      Atom::RightDoubleQuote => Atom::LeftDoubleQuote,
+    }
+  }
+
+  pub(crate) fn corresponding_right_atom(self) -> Self {
+    match self {
+      Atom::Str
+      | Atom::Escape
+      | Atom::Hardbreak
+      | Atom::Nbsp
+      | Atom::Blankline
+      | Atom::ImageMarker
+      | Atom::Ellipses
+      | Atom::Softbreak
+      | Atom::FootnoteReference
+      | Atom::OpenMarker
+      | Atom::Emoji
+      | Atom::ReferenceKey
+      | Atom::ReferenceValue
+      | Atom::CodeLanguage
+      | Atom::EmDash
+      | Atom::EnDash => self,
+      Atom::LeftDoubleQuote => Atom::RightDoubleQuote,
+      Atom::RightDoubleQuote => self,
+    }
+  }
+}
+
 impl fmt::Display for Atom {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let s = match self {
@@ -81,6 +181,7 @@ impl fmt::Display for Atom {
       Atom::Blankline => "blankline",
       Atom::ImageMarker => "image_marker",
       Atom::LeftDoubleQuote => "left_double_quote",
+      Atom::RightDoubleQuote => "right_double_quote",
       Atom::Ellipses => "ellipses",
       Atom::Softbreak => "softbreak",
       Atom::FootnoteReference => "footnote_reference",
@@ -89,6 +190,8 @@ impl fmt::Display for Atom {
       Atom::ReferenceKey => "reference_key",
       Atom::ReferenceValue => "reference_value",
       Atom::CodeLanguage => "code_language",
+      Atom::EmDash => "em_dash",
+      Atom::EnDash => "en_dash",
     };
     f.write_str(s)
   }
@@ -122,6 +225,9 @@ impl fmt::Display for Comp {
       Comp::Strong => "strong",
       Comp::DoubleQuoted => "double_quoted",
       Comp::ReferenceDefinition => "reference_definition",
+      Comp::Insert => "insert",
+      Comp::Delete => "delete",
+      Comp::Mark => "mark",
     };
     f.write_str(s)
   }

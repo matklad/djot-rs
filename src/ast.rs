@@ -57,6 +57,11 @@ tags![
   Emoji,
   ReferenceKey,
   ReferenceValue,
+  Insert,
+  Delete,
+  Mark,
+  EmDash,
+  EnDash,
 ];
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -104,6 +109,21 @@ pub struct Strong {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Emph {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Insert {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Delete {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Mark {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct EmDash {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct EnDash {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Span {}
