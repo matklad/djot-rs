@@ -87,6 +87,13 @@ impl<'a> Ctx<'a> {
         self.out("</a>");
       }
       TagKind::Str(str) => self.out_escape_html(&str.text),
+      TagKind::Emoji(emoji) => {
+        if let Some(emoji) = crate::emoji::find_emoji(&emoji.text) {
+          self.out(emoji);
+        } else {
+          self.out(&format!(":{}:", emoji.text));
+        }
+      }
       TagKind::Verbatim(verbatim) => {
         self.render_tag("code", &tag.attrs);
         self.out_escape_html(&verbatim.text);

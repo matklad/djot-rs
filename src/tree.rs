@@ -1,8 +1,8 @@
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Doc, DoubleQuoted, Emph, Image, Link, Para, ReferenceDefinition, ReferenceKey,
-    ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Url, Verbatim,
+    CodeBlock, Doc, DoubleQuoted, Emoji, Emph, Image, Link, Para, ReferenceDefinition,
+    ReferenceKey, ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Url, Verbatim,
   },
   block,
   patterns::find,
@@ -99,6 +99,7 @@ impl Ctx {
           Annot::Atom(atom) => {
             let tag = match atom {
               Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
+              Atom::Emoji => Tag::new(Emoji::new(&self.subject[m.s + 1..m.e - 1])),
               Atom::ReferenceKey => {
                 Tag::new(ReferenceKey { text: self.subject[m.s..m.e].to_string() })
               }

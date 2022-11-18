@@ -317,7 +317,7 @@ impl Parser {
         }
       }
       b':' => {
-        let m = bounded_find(&self.subject, "^%:[%w_+-]%:", pos, endpos);
+        let m = bounded_find(&self.subject, "^%:[%w_+-]+%:", pos, endpos);
         if m.is_match {
           self.add_match(m.start, m.end, Atom::Emoji);
           return Some(m.end);
