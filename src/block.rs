@@ -3,7 +3,7 @@ use std::fmt::Write;
 use crate::{
   annot::{Annot, Atom, Comp},
   inline,
-  patterns::{find, find_at, PatMatch, capture_at},
+  patterns::{find, find_at, PatMatch},
   Match, ParseOpts,
 };
 
@@ -87,10 +87,10 @@ impl Container for CodeBlock {
     Self: Sized,
   {
     let mut border = '`';
-    let mut m = p.capture("^```([ \t]*)([^%s`]*)[ \t]*[\r\n]");
+    let mut m = p.find("^```([ \t]*)([^%s`]*)[ \t]*[\r\n]");
     if !m.is_match {
       border = '~';
-      m = p.capture("^~~~([ \t]*)([^%s`]*)[ \t]*[\r\n]");
+      m = p.find("^~~~([ \t]*)([^%s`]*)[ \t]*[\r\n]");
     }
     if !m.is_match {
       return None;
@@ -174,10 +174,6 @@ impl Parser {
 
   fn find(&self, pat: &'static str) -> PatMatch {
     find_at(&self.subject, pat, self.pos)
-  }
-
-  fn capture(&self, pat: &'static str) -> PatMatch {
-    capture_at(&self.subject, pat, self.pos)
   }
 
   fn add_match(&mut self, startpos: usize, endpos: usize, annot: impl Into<Annot>) {
