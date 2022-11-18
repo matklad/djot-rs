@@ -125,7 +125,7 @@ impl Container for CodeBlock {
 }
 
 struct ReferenceDefinition {
-  _indent: usize,
+  indent: usize,
 }
 
 impl Container for ReferenceDefinition {
@@ -145,11 +145,19 @@ impl Container for ReferenceDefinition {
     p.add_match(m.start, m.start + m.cap1.len() + 1, Atom::ReferenceKey);
     p.add_match(m.end - m.cap2.len(), m.end, Atom::ReferenceValue);
     p.pos = m.end;
-    Some(Box::new(ReferenceDefinition { _indent: p.indent }))
+    Some(Box::new(ReferenceDefinition { indent: p.indent }))
   }
 
-  fn cont(&mut self, _p: &mut Parser) -> bool {
-    false
+  fn cont(&mut self, p: &mut Parser) -> bool {
+    if self.indent >= p.indent {
+      return false;
+    }
+    let m = p.find("^(%S+)");
+    if m.is_match {
+      p.add_match(m.cap1.start, m.cap1.end, Atom::ReferenceValue);
+      p.pos = m.end;
+    }
+    true
   }
 
   fn close(self: Box<Self>, p: &mut Parser) {
