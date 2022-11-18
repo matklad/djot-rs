@@ -5,6 +5,7 @@ mod patterns;
 mod block;
 mod inline;
 mod tree;
+mod emoji;
 mod html;
 
 use std::ops::Range;

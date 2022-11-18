@@ -54,6 +54,7 @@ tags![
   Softbreak,
   Url,
   Str,
+  Emoji,
   ReferenceKey,
   ReferenceValue,
 ];
@@ -135,6 +136,11 @@ pub struct Str {
   pub text: String,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Emoji {
+  pub text: String,
+}
+
 impl Tag {
   pub fn new(kind: impl Into<TagKind>) -> Tag {
     Tag { kind: kind.into(), attrs: Attrs::new(), children: Vec::new() }
@@ -161,6 +167,12 @@ impl Tag {
 impl Str {
   pub fn new(text: impl Into<String>) -> Str {
     Str { text: text.into() }
+  }
+}
+
+impl Emoji {
+  pub fn new(text: impl Into<String>) -> Emoji {
+    Emoji { text: text.into() }
   }
 }
 
