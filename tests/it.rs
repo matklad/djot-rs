@@ -9,6 +9,9 @@ fn to_ref_html(source: &str, matches: bool) -> String {
   sh.change_dir("ref");
   let matches = if matches { Some("-m") } else { None };
   let mut html = xshell::cmd!(sh, "lua ./bin/main.lua {matches...}").stdin(source).read().unwrap();
+  if cfg!(windows) {
+    html = html.replace("\r\n", "\n");
+  }
   html.push('\n');
   html
 }
