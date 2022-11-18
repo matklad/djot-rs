@@ -35,12 +35,7 @@ impl Opener {
 }
 
 // allow up to 3 captures...
-fn bounded_find(
-  subj: &str,
-  patt: &'static str,
-  startpos: usize,
-  endpos: usize,
-) -> PatMatch {
+fn bounded_find(subj: &str, patt: &'static str, startpos: usize, endpos: usize) -> PatMatch {
   let mut m = find_at(subj, patt, startpos);
   if m.end > endpos {
     m = PatMatch::default()
@@ -82,15 +77,45 @@ impl Parser {
   }
 
   fn between_matched(&mut self, pos: usize, c: u8, annotation: Comp, defaultmatch: Atom) -> usize {
+    self.between_matched_impl(
+      pos,
+      c,
+      annotation,
+      defaultmatch,
+      Option::<fn(&str, usize) -> PatMatch>::None,
+    )
+  }
+
+  fn between_matched_with_open_test(
+    &mut self,
+    pos: usize,
+    c: u8,
+    annotation: Comp,
+    defaultmatch: Atom,
+    open_test: impl FnOnce(&str, usize) -> PatMatch,
+  ) -> usize {
+    self.between_matched_impl(pos, c, annotation, defaultmatch, Some(open_test))
+  }
+
+  fn between_matched_impl(
+    &mut self,
+    pos: usize,
+    c: u8,
+    annotation: Comp,
+    mut defaultmatch: Atom,
+    opentest: Option<impl FnOnce(&str, usize) -> PatMatch>,
+  ) -> usize {
     let mut can_open = find_at(&self.subject, "^%S", pos + 1).is_match;
     let mut can_close = !self.subject[..pos].ends_with(is_space);
     let has_open_marker =
       pos != 0 && self.matches.get(&(pos - 1)).map_or(false, |it| it.is(Atom::OpenMarker));
-    let hash_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
+    let has_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
     let mut endcloser = pos;
     let mut startopener = pos;
 
-    // TODO: opentest
+    if let Some(opentest) = opentest {
+      can_open = can_open && opentest(&self.subject, pos).is_match;
+    }
 
     // allow explicit open/close markers to override:
     if has_open_marker {
@@ -98,13 +123,17 @@ impl Parser {
       can_close = false;
       startopener = pos - 1;
     }
-    if !has_open_marker && hash_close_marker {
+    if !has_open_marker && has_close_marker {
       can_close = true;
       can_open = false;
       endcloser = pos + 1;
     }
 
-    // TODO: defaultmatch
+    if has_open_marker && defaultmatch.is_right_atom() {
+      defaultmatch = defaultmatch.corresponding_left_atom();
+    } else if has_close_marker && defaultmatch.is_left_atom() {
+      defaultmatch = defaultmatch.corresponding_right_atom();
+    }
 
     let openers = self.openers.entry(c).or_default();
     if can_close && openers.len() > 0 {
@@ -326,11 +355,80 @@ impl Parser {
           return Some(pos + 1);
         }
       }
-      b'+' => todo!(),
-      b'=' => todo!(),
+      b'+' => Some(self.between_matched_with_open_test(
+        pos,
+        b'+',
+        Comp::Insert,
+        Atom::Str,
+        |subject, pos| {
+          find_at(subject, "^%{", pos - 1).or_else(|| find_at(subject, "^%}", pos + 1))
+        },
+      )),
+      b'=' => Some(self.between_matched_with_open_test(
+        pos,
+        b'=',
+        Comp::Mark,
+        Atom::Str,
+        |subject, pos| {
+          find_at(subject, "^%{", pos - 1).or_else(|| find_at(subject, "^%}", pos + 1))
+        },
+      )),
       b'\'' => todo!(),
       b'"' => Some(self.between_matched(pos, b'"', Comp::DoubleQuoted, Atom::LeftDoubleQuote)),
-      b'-' => todo!(),
+      b'-' => {
+        let subject = &self.subject[..];
+        if subject.as_bytes().get(pos - 1) == Some(&b'{')
+          || subject.as_bytes().get(pos + 1) == Some(&b'}')
+        {
+          return Some(self.between_matched_with_open_test(
+            pos,
+            b'-',
+            Comp::Delete,
+            Atom::Str,
+            |subject, pos| {
+              find_at(subject, "^%{", pos - 1).or_else(|| find_at(subject, "^%}", pos + 1))
+            },
+          ));
+        }
+
+        let ep = find_at(subject, "^%-*", pos).end.min(endpos);
+        let mut hyphens = ep - pos;
+        if subject.as_bytes().get(ep) == Some(&b'}') {
+          // last hyphen is close del
+          hyphens -= 1;
+        }
+        if hyphens == 0 {
+          self.add_match(pos, pos + 2, Atom::Str);
+          return Some(pos + 2);
+        }
+        let mut pos = pos;
+        let all_em = hyphens % 3 == 0;
+        let all_en = hyphens % 2 == 0;
+        while hyphens > 0 {
+          if all_em {
+            self.add_match(pos, pos + 3, Atom::EmDash);
+            pos += 3;
+            hyphens -= 3;
+          } else if all_en {
+            self.add_match(pos, pos + 2, Atom::EnDash);
+            pos += 2;
+            hyphens -= 2;
+          } else if hyphens >= 3 && (hyphens % 2 != 0 || hyphens > 4) {
+            self.add_match(pos, pos + 3, Atom::EmDash);
+            pos += 3;
+            hyphens -= 3;
+          } else if hyphens >= 2 {
+            self.add_match(pos, pos + 2, Atom::EnDash);
+            pos += 2;
+            hyphens -= 2;
+          } else {
+            self.add_match(pos, pos + 1, Atom::Str);
+            pos += 1;
+            hyphens -= 1;
+          }
+        }
+        Some(pos)
+      }
       b'.' => {
         if bounded_find(&self.subject, "^%.%.", pos + 1, endpos).is_match {
           self.add_match(pos, pos + 3, Atom::Ellipses);

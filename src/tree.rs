@@ -1,8 +1,9 @@
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Doc, DoubleQuoted, Emoji, Emph, Image, Link, Para, ReferenceDefinition,
-    ReferenceKey, ReferenceValue, Softbreak, Span, Str, Strong, Tag, TagKind, Url, Verbatim,
+    CodeBlock, Delete, Doc, DoubleQuoted, EmDash, Emoji, Emph, EnDash, Image, Insert, Link, Mark,
+    Para, ReferenceDefinition, ReferenceKey, ReferenceValue, Softbreak, Span, Str, Strong, Tag,
+    TagKind, Url, Verbatim,
   },
   block,
   patterns::find,
@@ -31,6 +32,9 @@ impl Ctx {
       Comp::Destination => Doc {}.into(),
       Comp::Strong => Strong {}.into(),
       Comp::Emph => Emph {}.into(),
+      Comp::Insert => Insert {}.into(),
+      Comp::Delete => Delete {}.into(),
+      Comp::Mark => Mark {}.into(),
       Comp::DoubleQuoted => DoubleQuoted {}.into(),
       Comp::Verbatim => Verbatim { text: String::new() }.into(),
       Comp::Reference => Span {}.into(),
@@ -112,6 +116,8 @@ impl Ctx {
                 self.idx += 1;
                 continue;
               }
+              Atom::EmDash => Tag::new(EmDash {}),
+              Atom::EnDash => Tag::new(EnDash {}),
               _ => todo!("todo atom: {atom}"),
             };
             node.children.push(tag);

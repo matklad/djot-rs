@@ -104,6 +104,23 @@ impl<'a> Ctx<'a> {
         self.render_children(tag);
         self.out("</span>");
       }
+      TagKind::Insert(_) => {
+        self.render_tag("ins", &tag.attrs);
+        self.render_children(tag);
+        self.out("</ins>");
+      }
+      TagKind::Delete(_) => {
+        self.render_tag("del", &tag.attrs);
+        self.render_children(tag);
+        self.out("</del>");
+      }
+      TagKind::Mark(_) => {
+        self.render_tag("mark", &tag.attrs);
+        self.render_children(tag);
+        self.out("</mark>");
+      }
+      TagKind::EmDash(_) => self.out("&mdash;"),
+      TagKind::EnDash(_) => self.out("&ndash;"),
       TagKind::ReferenceDefinition(_) | TagKind::ReferenceKey(_) | TagKind::ReferenceValue(_) => (),
     }
   }

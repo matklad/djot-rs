@@ -25,6 +25,14 @@ impl PatMatch {
       endpos
     }
   }
+
+  pub(crate) fn or_else(self, f: impl FnOnce() -> Self) -> Self {
+    if self.is_match {
+      self
+    } else {
+      f()
+    }
+  }
 }
 
 pub fn find(subject: &str, pat: &'static str) -> PatMatch {
