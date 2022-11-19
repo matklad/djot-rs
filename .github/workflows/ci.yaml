@@ -20,5 +20,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: Swatinem/rust-cache@6720f05bc48b77f96918929a9019fb2203ff71f8
+    - run: rustup update --no-self-update stable
     - run: sudo apt-get install lua5.3
     - run: cargo test
