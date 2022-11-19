@@ -10,7 +10,7 @@ use crate::{
   Document, Match,
 };
 
-pub(crate) fn build(p: block::Parser) -> Document {
+pub(crate) fn build(p: block::Tokenizer) -> Document {
   let tag = Ctx { subject: p.subject, matches: p.matches, idx: 0 }.get_node(Comp::Doc);
   Document { children: tag.children, debug: p.debug }
 }

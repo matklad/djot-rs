@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Parser {
+pub struct Tokenizer {
   opts: ParseOpts,
   subject: String,
   matches: BTreeMap<usize, Match>,
@@ -43,9 +43,9 @@ fn bounded_find(subj: &str, patt: &'static str, startpos: usize, endpos: usize) 
   m
 }
 
-impl Parser {
-  pub fn new(subject: String, opts: ParseOpts) -> Parser {
-    let mut res = Parser::default();
+impl Tokenizer {
+  pub fn new(subject: String, opts: ParseOpts) -> Tokenizer {
+    let mut res = Tokenizer::default();
     res.subject = subject;
     res.opts = opts;
     res
