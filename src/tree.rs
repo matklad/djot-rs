@@ -107,18 +107,16 @@ impl Ctx {
               }
               Comp::Url => result.cast::<Url>().destination = get_string_content(&result),
               Comp::ReferenceDefinition => {
-                let mut key = None;
-                let mut value = None;
+                let mut key = String::new();
+                let mut value = String::new();
                 for c in &result.children {
                   match &c.kind {
-                    TagKind::ReferenceKey(it) => key = Some(it.text.clone()),
-                    TagKind::ReferenceValue(it) => value = Some(it.text.clone()),
+                    TagKind::ReferenceKey(it) => key.push_str(&it.text),
+                    TagKind::ReferenceValue(it) => value.push_str(&it.text),
                     _ => (),
                   }
                 }
-                if let (Some(key), Some(value)) = (key, value) {
-                  self.references.insert(key, value);
-                }
+                self.references.insert(key, value);
               }
               _ => (),
             }
