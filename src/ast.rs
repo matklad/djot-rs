@@ -101,7 +101,9 @@ pub struct CodeBlock {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
-pub struct ReferenceDefinition {}
+pub struct ReferenceDefinition {
+  pub destination: String,
+}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Softbreak {}

@@ -21,7 +21,7 @@ pub(crate) fn build(p: block::Tokenizer) -> Document {
 struct Ctx {
   subject: String,
   matches: Vec<Match>,
-  references: BTreeMap<String, String>,
+  references: BTreeMap<String, Tag>,
   idx: usize,
 }
 
@@ -44,7 +44,7 @@ impl Ctx {
       Comp::DoubleQuoted => DoubleQuoted {}.into(),
       Comp::Verbatim => Verbatim { text: String::new() }.into(),
       Comp::Reference => Span {}.into(),
-      Comp::ReferenceDefinition => ReferenceDefinition {}.into(),
+      Comp::ReferenceDefinition => ReferenceDefinition { destination: String::new() }.into(),
       Comp::Url => Url { destination: String::new() }.into(),
       _ => panic!("unhandled {maintag}"),
     });
@@ -117,7 +117,10 @@ impl Ctx {
                     _ => (),
                   }
                 }
-                self.references.insert(key, value);
+                result.children.clear();
+                result.cast::<ReferenceDefinition>().destination = value;
+                self.references.insert(key, result);
+                continue;
               }
               _ => (),
             }
