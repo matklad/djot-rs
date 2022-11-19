@@ -77,6 +77,20 @@ impl Atom {
   pub(crate) fn is_right_atom(self) -> bool {
     matches!(self,  | Atom::RightDoubleQuote)
   }
+  pub(crate) fn corresponding_left_atom(self) -> Atom {
+    match self {
+      Atom::RightDoubleQuote => Atom::LeftDoubleQuote,
+
+      _ => self,
+    }
+  }
+  pub(crate) fn corresponding_right_atom(self) -> Atom {
+    match self {
+      Atom::LeftDoubleQuote => Atom::RightDoubleQuote,
+
+      _ => self,
+    }
+  }
 }
 
 impl fmt::Display for Atom {

@@ -36,54 +36,6 @@ impl fmt::Display for Annot {
   }
 }
 
-impl Atom {
-  pub(crate) fn corresponding_left_atom(self) -> Self {
-    match self {
-      Atom::Str
-      | Atom::Escape
-      | Atom::Hardbreak
-      | Atom::Nbsp
-      | Atom::Blankline
-      | Atom::ImageMarker
-      | Atom::Ellipses
-      | Atom::Softbreak
-      | Atom::FootnoteReference
-      | Atom::OpenMarker
-      | Atom::Emoji
-      | Atom::ReferenceKey
-      | Atom::ReferenceValue
-      | Atom::CodeLanguage
-      | Atom::EmDash
-      | Atom::EnDash => self,
-      Atom::LeftDoubleQuote => self,
-      Atom::RightDoubleQuote => Atom::LeftDoubleQuote,
-    }
-  }
-
-  pub(crate) fn corresponding_right_atom(self) -> Self {
-    match self {
-      Atom::Str
-      | Atom::Escape
-      | Atom::Hardbreak
-      | Atom::Nbsp
-      | Atom::Blankline
-      | Atom::ImageMarker
-      | Atom::Ellipses
-      | Atom::Softbreak
-      | Atom::FootnoteReference
-      | Atom::OpenMarker
-      | Atom::Emoji
-      | Atom::ReferenceKey
-      | Atom::ReferenceValue
-      | Atom::CodeLanguage
-      | Atom::EmDash
-      | Atom::EnDash => self,
-      Atom::LeftDoubleQuote => Atom::RightDoubleQuote,
-      Atom::RightDoubleQuote => self,
-    }
-  }
-}
-
 impl Comp {
   pub(crate) fn add(self) -> Annot {
     Annot::Add(self)

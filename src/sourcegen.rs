@@ -108,9 +108,14 @@ pub(crate) enum Atom {{
 
   let mut left_atoms = String::new();
   let mut right_atoms = String::new();
+  let mut ltr = String::new();
+  let mut rtl = String::new();
   for ident in atoms.lines() {
     if ident.starts_with("left_") {
-      format_to!(left_atoms, " | Atom::{}", camel_case(ident))
+      format_to!(left_atoms, " | Atom::{}", camel_case(ident));
+      let rident = &ident.replace("left", "right");
+      format_to!(ltr, "Atom::{} => Atom::{},\n", camel_case(ident), camel_case(rident));
+      format_to!(rtl, "Atom::{} => Atom::{},\n", camel_case(rident), camel_case(ident));
     }
     if ident.starts_with("right_") {
       format_to!(right_atoms, " | Atom::{}", camel_case(ident))
@@ -126,6 +131,18 @@ impl Atom {{
   }}
   pub(crate) fn is_right_atom(self) -> bool {{
     matches!(self, {right_atoms})
+  }}
+  pub(crate) fn corresponding_left_atom(self) -> Atom {{
+    match self {{
+      {rtl}
+      _ => self
+    }}
+  }}
+  pub(crate) fn corresponding_right_atom(self) -> Atom {{
+    match self {{
+      {ltr}
+      _ => self
+    }}
   }}
 }}
 "
