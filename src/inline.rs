@@ -115,8 +115,8 @@ impl Tokenizer {
     let has_open_marker =
       pos != 0 && self.matches.get(&(pos - 1)).map_or(false, |it| it.is(Atom::OpenMarker));
     let has_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
-    let mut endcloser = pos;
     let mut startopener = pos;
+    let mut endcloser = pos + 1;
 
     if let Some(opentest) = opentest {
       can_open = can_open && opentest(&self.subject, pos).is_match;
@@ -131,7 +131,7 @@ impl Tokenizer {
     if !has_open_marker && has_close_marker {
       can_close = true;
       can_open = false;
-      endcloser = pos + 1;
+      endcloser = pos + 2;
     }
 
     if has_open_marker && defaultmatch.is_right_atom() {
@@ -149,7 +149,7 @@ impl Tokenizer {
         self.clear_openers(opener.spos, pos);
         self.add_match(opener.spos..opener.epos, Annot::Add(annotation));
         self.add_match(pos..endcloser, Annot::Sub(annotation));
-        return endcloser + 1;
+        return endcloser;
       }
     }
     // if we get here, we didn't match an opener
@@ -158,8 +158,8 @@ impl Tokenizer {
       self.add_match(startopener..pos + 1, defaultmatch);
       pos + 1
     } else {
-      self.add_match(startopener..endcloser + 1, defaultmatch);
-      endcloser + 1
+      self.add_match(startopener..endcloser, defaultmatch);
+      endcloser
     }
   }
 
