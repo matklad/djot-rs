@@ -46,13 +46,14 @@ en_dash
 
 #[test]
 fn generate_annotations() {
-  let content = annotations();
-  ensure_content("src/annot/generated.rs", &content);
+  let (composites, atoms) = ANNOTATIONS.trim().split_once("\n\n").unwrap();
+  let mut buf = String::new();
+  emit_comp(&mut buf, composites);
+  emit_atom(&mut buf, atoms);
+  ensure_content("src/annot/generated.rs", &buf);
 }
 
-fn annotations() -> String {
-  let mut buf = String::new();
-  let (composites, atoms) = ANNOTATIONS.trim().split_once("\n\n").unwrap();
+fn emit_comp(buf: &mut String, composites: &str) {
   format_to!(
     buf,
     "\
@@ -64,19 +65,44 @@ pub(crate) enum Comp {{
     format_to!(buf, "  {},\n", camel_case(ident))
   }
   format_to!(buf, "}}\n");
+}
+
+fn emit_atom(buf: &mut String, atoms: &str) {
+  let mut left_atoms = String::new();
+  let mut right_atoms = String::new();
+  for ident in atoms.lines() {
+    if ident.starts_with("left_") {
+      format_to!(left_atoms, " | Atom::{}", camel_case(ident))
+    }
+    if ident.starts_with("right_") {
+      format_to!(right_atoms, " | Atom::{}", camel_case(ident))
+    }
+  }
 
   format_to!(
     buf,
     "
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Atom {{
-"
+  "
   );
   for ident in atoms.lines() {
     format_to!(buf, "  {},\n", camel_case(ident))
   }
   format_to!(buf, "}}\n");
-  buf
+  format_to!(
+    buf,
+    "
+impl Atom {{
+  pub(crate) fn is_left_atom(self) -> bool {{
+    matches!(self, {left_atoms})
+  }}
+  pub(crate) fn is_right_atom(self) -> bool {{
+    matches!(self, {right_atoms})
+  }}
+}}
+"
+  );
 }
 
 fn camel_case(ident: &str) -> String {

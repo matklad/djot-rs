@@ -37,52 +37,6 @@ impl fmt::Display for Annot {
 }
 
 impl Atom {
-  pub(crate) fn is_left_atom(self) -> bool {
-    match self {
-      Atom::Str
-      | Atom::Escape
-      | Atom::Hardbreak
-      | Atom::Nbsp
-      | Atom::Blankline
-      | Atom::ImageMarker
-      | Atom::Ellipses
-      | Atom::Softbreak
-      | Atom::FootnoteReference
-      | Atom::OpenMarker
-      | Atom::Emoji
-      | Atom::ReferenceKey
-      | Atom::ReferenceValue
-      | Atom::CodeLanguage
-      | Atom::EmDash
-      | Atom::EnDash => false,
-      Atom::LeftDoubleQuote => true,
-      Atom::RightDoubleQuote => false,
-    }
-  }
-
-  pub(crate) fn is_right_atom(self) -> bool {
-    match self {
-      Atom::Str
-      | Atom::Escape
-      | Atom::Hardbreak
-      | Atom::Nbsp
-      | Atom::Blankline
-      | Atom::ImageMarker
-      | Atom::Ellipses
-      | Atom::Softbreak
-      | Atom::FootnoteReference
-      | Atom::OpenMarker
-      | Atom::Emoji
-      | Atom::ReferenceKey
-      | Atom::ReferenceValue
-      | Atom::CodeLanguage
-      | Atom::EmDash
-      | Atom::EnDash => false,
-      Atom::LeftDoubleQuote => false,
-      Atom::RightDoubleQuote => true,
-    }
-  }
-
   pub(crate) fn corresponding_left_atom(self) -> Self {
     match self {
       Atom::Str
