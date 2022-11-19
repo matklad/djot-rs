@@ -1,3 +1,4 @@
+// TODO: re-export everything.
 pub mod ast;
 
 mod annot;
@@ -10,7 +11,7 @@ mod html;
 
 use std::{collections::BTreeMap, ops::Range};
 
-use annot::Annot;
+use crate::annot::Annot;
 
 #[derive(Debug, Clone)]
 pub struct Document {
@@ -18,6 +19,14 @@ pub struct Document {
   pub debug: String,
   pub references: BTreeMap<String, String>,
 }
+
+#[derive(Default, Clone)]
+pub struct ParseOpts {
+  pub debug_matches: bool,
+}
+
+#[derive(Default, Clone)]
+pub struct HtmlOpts {}
 
 impl Document {
   pub fn parse(text: &str) -> Document {
@@ -48,14 +57,6 @@ impl Document {
       .unwrap()
   }
 }
-
-#[derive(Default, Clone)]
-pub struct ParseOpts {
-  pub debug_matches: bool,
-}
-
-#[derive(Default, Clone)]
-pub struct HtmlOpts {}
 
 #[derive(Debug, Clone, Copy)]
 struct Match {
