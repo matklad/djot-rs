@@ -32,8 +32,8 @@ struct Opener {
 }
 
 impl Opener {
-  fn new(spos: usize, epos: usize) -> Self {
-    Self { spos, epos, annot: "", subspos: 0, subepos: 0 }
+  fn new(range: Range<usize>) -> Opener {
+    Opener { spos: range.start, epos: range.end, annot: "", subspos: 0, subepos: 0 }
   }
 }
 
@@ -115,8 +115,8 @@ impl Tokenizer {
     let has_open_marker =
       pos != 0 && self.matches.get(&(pos - 1)).map_or(false, |it| it.is(Atom::OpenMarker));
     let has_close_marker = self.subject.as_bytes()[pos + 1] == b'}';
-    let mut endcloser = pos;
     let mut startopener = pos;
+    let mut endcloser = pos + 1;
 
     if let Some(opentest) = opentest {
       can_open = can_open && opentest(&self.subject, pos).is_match;
@@ -131,7 +131,7 @@ impl Tokenizer {
     if !has_open_marker && has_close_marker {
       can_close = true;
       can_open = false;
-      endcloser = pos + 1;
+      endcloser = pos + 2;
     }
 
     if has_open_marker && defaultmatch.is_right_atom() {
@@ -144,22 +144,22 @@ impl Tokenizer {
     if can_close && openers.len() > 0 {
       // check openers for a match
       let opener = *openers.last().unwrap();
-      if opener.epos != pos - 1 {
+      if opener.epos != pos {
         // exclude empty emph
-        self.clear_openers(opener.spos, pos);
+        self.clear_openers(opener.spos, pos + 1);
         self.add_match(opener.spos..opener.epos, Annot::Add(annotation));
         self.add_match(pos..endcloser, Annot::Sub(annotation));
-        return endcloser + 1;
+        return endcloser;
       }
     }
     // if we get here, we didn't match an opener
     if can_open {
-      self.add_opener(c, Opener::new(startopener, pos));
+      self.add_opener(c, Opener::new(startopener..pos + 1));
       self.add_match(startopener..pos + 1, defaultmatch);
       pos + 1
     } else {
-      self.add_match(startopener..endcloser + 1, defaultmatch);
-      endcloser + 1
+      self.add_match(startopener..endcloser, defaultmatch);
+      endcloser
     }
   }
 
@@ -243,7 +243,7 @@ impl Tokenizer {
           self.add_match(pos..m.end, Atom::FootnoteReference);
           return Some(m.end);
         } else {
-          self.add_opener(b'[', Opener::new(pos, pos + 1));
+          self.add_opener(b'[', Opener::new(pos..pos + 1));
           self.add_match(pos..pos + 1, Atom::Str);
           return Some(pos + 1);
         }
@@ -295,7 +295,7 @@ impl Tokenizer {
         if !self.destination {
           return None;
         }
-        self.add_opener(b'(', Opener::new(pos, pos + 1));
+        self.add_opener(b'(', Opener::new(pos..pos + 1));
         self.add_match(pos..pos + 1, Atom::Str);
         return Some(pos + 1);
       }

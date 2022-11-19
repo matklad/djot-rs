@@ -23,7 +23,7 @@ struct TestOpts {
 }
 
 #[test]
-fn ref_tests() {
+fn spec_tests() {
   let opts = TestOpts {
     debug_ast: false,
     ref_matches: true,
