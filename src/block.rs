@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::{fmt::Write, ops::Range};
 
 use crate::{
   annot::{Annot, Atom, Comp},
@@ -56,7 +56,7 @@ impl Container for Para {
   where
     Self: Sized,
   {
-    p.add_match(p.pos, p.pos, Comp::Para.add());
+    p.add_match(p.pos..p.pos, Comp::Para.add());
     Some(Box::new(Para {
       inline_parser: inline::Tokenizer::new(p.subject.clone(), p.opts.clone()),
     }))
@@ -68,7 +68,7 @@ impl Container for Para {
 
   fn close(mut self: Box<Self>, p: &mut Tokenizer) {
     p.matches.extend(self.inline_parser.get_matches());
-    p.add_match(p.pos - 1, p.pos - 1, Comp::Para.sub())
+    p.add_match(p.pos - 1..p.pos - 1, Comp::Para.sub())
   }
 }
 
@@ -99,9 +99,9 @@ impl Container for CodeBlock {
     }
     let lang = m.cap2;
 
-    p.add_match(p.pos, p.pos + 3, Comp::CodeBlock.add());
+    p.add_match(p.pos..p.pos + 3, Comp::CodeBlock.add());
     if !lang.is_empty() {
-      p.add_match(lang.start, lang.end, Atom::CodeLanguage)
+      p.add_match(lang.start..lang.end, Atom::CodeLanguage)
     }
 
     p.pos = p.pos + 2;
@@ -122,7 +122,7 @@ impl Container for CodeBlock {
   }
 
   fn close(self: Box<Self>, p: &mut Tokenizer) {
-    p.add_match(p.pos - 3, p.pos, Comp::CodeBlock.sub());
+    p.add_match(p.pos - 3..p.pos, Comp::CodeBlock.sub());
   }
 }
 
@@ -143,9 +143,9 @@ impl Container for ReferenceDefinition {
     if !m.is_match {
       return None;
     }
-    p.add_match(m.start, m.start, Comp::ReferenceDefinition.add());
-    p.add_match(m.start, m.start + m.cap1.len() + 1, Atom::ReferenceKey);
-    p.add_match(m.end - m.cap2.len(), m.end, Atom::ReferenceValue);
+    p.add_match(m.start..m.start, Comp::ReferenceDefinition.add());
+    p.add_match(m.start..m.start + m.cap1.len() + 1, Atom::ReferenceKey);
+    p.add_match(m.end - m.cap2.len()..m.end, Atom::ReferenceValue);
     p.pos = m.end;
     Some(Box::new(ReferenceDefinition { indent: p.indent }))
   }
@@ -156,14 +156,14 @@ impl Container for ReferenceDefinition {
     }
     let m = p.find("^(%S+)");
     if m.is_match {
-      p.add_match(m.cap1.start, m.cap1.end, Atom::ReferenceValue);
+      p.add_match(m.cap1.start..m.cap1.end, Atom::ReferenceValue);
       p.pos = m.end;
     }
     true
   }
 
   fn close(self: Box<Self>, p: &mut Tokenizer) {
-    p.add_match(p.pos, p.pos, Comp::ReferenceDefinition.sub())
+    p.add_match(p.pos..p.pos, Comp::ReferenceDefinition.sub())
   }
 
   fn inline_parser(&mut self) -> Option<&mut inline::Tokenizer> {
@@ -186,8 +186,8 @@ impl Tokenizer {
     find_at(&self.subject, pat, self.pos)
   }
 
-  fn add_match(&mut self, startpos: usize, endpos: usize, annot: impl Into<Annot>) {
-    self.matches.push(Match::new(startpos..endpos, annot))
+  fn add_match(&mut self, range: Range<usize>, annot: impl Into<Annot>) {
+    self.matches.push(Match::new(range, annot))
   }
 
   //  fn add_container(&mut self, container: Container) {
@@ -299,7 +299,7 @@ impl Tokenizer {
             if is_blank {
               if !new_starts {
                 // need to track these for tight/loose lists
-                self.add_match(self.pos, self.endeol, Atom::Blankline);
+                self.add_match(self.pos..self.endeol, Atom::Blankline);
               }
             } else {
               let para = CONTAINERS[0](self).unwrap();
@@ -314,7 +314,7 @@ impl Tokenizer {
                 // get back the leading spaces we gobbled
                 startpos = startpos - (self.indent - tip_indent)
               }
-              self.add_match(startpos, self.endeol, Atom::Str)
+              self.add_match(startpos..self.endeol, Atom::Str)
             } else if let Some(inline_parser) = tip.inline_parser() {
               if !is_blank {
                 inline_parser.feed(self.pos, self.endeol)
