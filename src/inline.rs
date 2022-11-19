@@ -144,9 +144,9 @@ impl Tokenizer {
     if can_close && openers.len() > 0 {
       // check openers for a match
       let opener = *openers.last().unwrap();
-      if opener.epos != pos - 1 {
+      if opener.epos != pos {
         // exclude empty emph
-        self.clear_openers(opener.spos, pos);
+        self.clear_openers(opener.spos, pos + 1);
         self.add_match(opener.spos..opener.epos, Annot::Add(annotation));
         self.add_match(pos..endcloser, Annot::Sub(annotation));
         return endcloser;
