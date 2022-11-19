@@ -24,7 +24,7 @@ impl Document {
   }
 
   pub fn parse_opts(opts: ParseOpts, text: &str) -> Document {
-    let mut p = block::Parser::new(text.to_string(), opts);
+    let mut p = block::Tokenizer::new(text.to_string(), opts);
     p.parse();
     tree::build(p)
   }

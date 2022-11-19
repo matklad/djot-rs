@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Parser {
+pub struct Tokenizer {
   pub subject: String,
   indent: usize,
   startline: usize,
@@ -25,46 +25,48 @@ pub struct Parser {
 
 trait Container {
   fn content(&self) -> &'static str;
-  fn inline_parser(&mut self) -> Option<&mut inline::Parser> {
+  fn inline_parser(&mut self) -> Option<&mut inline::Tokenizer> {
     None
   }
   fn restore_indent(&self) -> Option<usize> {
     None
   }
-  fn open(p: &mut Parser) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
   where
     Self: Sized;
-  fn cont(&mut self, p: &mut Parser) -> bool;
-  fn close(self: Box<Self>, p: &mut Parser);
+  fn cont(&mut self, p: &mut Tokenizer) -> bool;
+  fn close(self: Box<Self>, p: &mut Tokenizer);
 }
 
-const CONTAINERS: &[fn(&mut Parser) -> Option<Box<dyn Container>>] =
+const CONTAINERS: &[fn(&mut Tokenizer) -> Option<Box<dyn Container>>] =
   &[Para::open, CodeBlock::open, ReferenceDefinition::open];
 
 struct Para {
-  inline_parser: inline::Parser,
+  inline_parser: inline::Tokenizer,
 }
 
 impl Container for Para {
   fn content(&self) -> &'static str {
     "inline"
   }
-  fn inline_parser(&mut self) -> Option<&mut inline::Parser> {
+  fn inline_parser(&mut self) -> Option<&mut inline::Tokenizer> {
     Some(&mut self.inline_parser)
   }
-  fn open(p: &mut Parser) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
   where
     Self: Sized,
   {
     p.add_match(p.pos, p.pos, Comp::Para.add());
-    Some(Box::new(Para { inline_parser: inline::Parser::new(p.subject.clone(), p.opts.clone()) }))
+    Some(Box::new(Para {
+      inline_parser: inline::Tokenizer::new(p.subject.clone(), p.opts.clone()),
+    }))
   }
 
-  fn cont(&mut self, p: &mut Parser) -> bool {
+  fn cont(&mut self, p: &mut Tokenizer) -> bool {
     p.find("^%S").is_match
   }
 
-  fn close(mut self: Box<Self>, p: &mut Parser) {
+  fn close(mut self: Box<Self>, p: &mut Tokenizer) {
     p.matches.extend(self.inline_parser.get_matches());
     p.add_match(p.pos - 1, p.pos - 1, Comp::Para.sub())
   }
@@ -82,7 +84,7 @@ impl Container for CodeBlock {
   fn restore_indent(&self) -> Option<usize> {
     Some(self.indent)
   }
-  fn open(p: &mut Parser) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
   where
     Self: Sized,
   {
@@ -107,7 +109,7 @@ impl Container for CodeBlock {
     Some(Box::new(CodeBlock { border, indent: p.indent }))
   }
 
-  fn cont(&mut self, p: &mut Parser) -> bool {
+  fn cont(&mut self, p: &mut Tokenizer) -> bool {
     let m =
       if self.border == '`' { p.find("^(```)[ \t]*[\r\n]") } else { p.find("^(~~~)[ \t]*[\r\n]") };
     if m.is_match {
@@ -119,7 +121,7 @@ impl Container for CodeBlock {
     }
   }
 
-  fn close(self: Box<Self>, p: &mut Parser) {
+  fn close(self: Box<Self>, p: &mut Tokenizer) {
     p.add_match(p.pos - 3, p.pos, Comp::CodeBlock.sub());
   }
 }
@@ -133,7 +135,7 @@ impl Container for ReferenceDefinition {
     ""
   }
 
-  fn open(p: &mut Parser) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
   where
     Self: Sized,
   {
@@ -148,7 +150,7 @@ impl Container for ReferenceDefinition {
     Some(Box::new(ReferenceDefinition { indent: p.indent }))
   }
 
-  fn cont(&mut self, p: &mut Parser) -> bool {
+  fn cont(&mut self, p: &mut Tokenizer) -> bool {
     if self.indent >= p.indent {
       return false;
     }
@@ -160,21 +162,21 @@ impl Container for ReferenceDefinition {
     true
   }
 
-  fn close(self: Box<Self>, p: &mut Parser) {
+  fn close(self: Box<Self>, p: &mut Tokenizer) {
     p.add_match(p.pos, p.pos, Comp::ReferenceDefinition.sub())
   }
 
-  fn inline_parser(&mut self) -> Option<&mut inline::Parser> {
+  fn inline_parser(&mut self) -> Option<&mut inline::Tokenizer> {
     None
   }
 }
 
-impl Parser {
-  pub fn new(mut subject: String, opts: ParseOpts) -> Parser {
+impl Tokenizer {
+  pub fn new(mut subject: String, opts: ParseOpts) -> Tokenizer {
     if !find(&subject, "[\r\n]$").is_match {
       subject.push('\n');
     }
-    let mut res = Parser::default();
+    let mut res = Tokenizer::default();
     res.subject = subject;
     res.opts = opts;
     res
