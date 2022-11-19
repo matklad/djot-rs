@@ -59,7 +59,7 @@ andurl)
 .
 <p><a href="">link</a></p>
 ```
-STOP
+
 ```
 [link][]
 [link][link2]
@@ -114,7 +114,7 @@ No case normalization is done on reference definitions:
 .
 <p><a>Link</a></p>
 ```
-
+STOP
 Attributes on reference definitions get transferred to
 the link:
 
