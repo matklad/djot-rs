@@ -1,7 +1,6 @@
 use std::fmt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Comp {
-  Doc,
   Verbatim,
   Email,
   Url,
@@ -25,7 +24,6 @@ pub(crate) enum Comp {
 impl fmt::Display for Comp {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_str(match self {
-      Comp::Doc => "doc",
       Comp::Verbatim => "verbatim",
       Comp::Email => "email",
       Comp::Url => "url",

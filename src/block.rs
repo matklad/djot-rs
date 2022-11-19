@@ -145,7 +145,9 @@ impl Container for ReferenceDefinition {
     }
     p.add_match(m.start..m.start, Comp::ReferenceDefinition.add());
     p.add_match(m.start..m.start + m.cap1.len() + 2, Atom::ReferenceKey);
-    p.add_match(m.end - m.cap2.len()..m.end, Atom::ReferenceValue);
+    if !m.cap2.is_empty() {
+      p.add_match(m.end - m.cap2.len()..m.end, Atom::ReferenceValue);
+    }
     p.pos = m.end;
     Some(Box::new(ReferenceDefinition { indent: p.indent }))
   }
@@ -337,7 +339,7 @@ impl Tokenizer {
     if self.opts.debug_matches {
       for &m in &self.matches {
         let ms = format!("{} {}-{}", m.a, m.s + 1, if m.e == m.s { m.e + 1 } else { m.e });
-        format_to!(self.debug, "{ms:<20} {:?}", self.subject.get(m.s..m.e).unwrap_or_default());
+        format_to!(self.debug, "{ms:<20} {:?}\n", self.subject.get(m.s..m.e).unwrap_or_default());
       }
     }
   }
