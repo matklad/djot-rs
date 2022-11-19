@@ -24,11 +24,8 @@ struct TestOpts {
 
 #[test]
 fn spec_tests() {
-  let opts = TestOpts {
-    debug_ast: false,
-    ref_matches: true,
-    parse: djot::ParseOpts { debug_matches: true },
-  };
+  let opts =
+    TestOpts { debug_ast: true, ref_matches: true, parse: djot::ParseOpts { debug_matches: true } };
 
   let mut last_fail = LastFail::load();
   let sh = xshell::Shell::new().unwrap();

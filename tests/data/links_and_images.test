@@ -31,7 +31,7 @@
 .
 <p><a href="url">link</a></p>
 ```
-STOP
+
 The URL can be split over multiple lines:
 
 ```
@@ -43,7 +43,7 @@ The URL can be split over multiple lines:
 .
 <p><a href="urlandurl">link</a></p>
 ```
-
+STOP
 ```
 [link](url
 andurl)

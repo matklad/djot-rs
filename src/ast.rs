@@ -15,7 +15,7 @@ pub struct Tag {
 macro_rules!  tags {
     ($($tag:ident,)*) => {
 #[derive(Debug, Clone, serde::Serialize)]
-#[serde(tag = "tag", rename_all = "lowercase")]
+#[serde(tag = "tag", rename_all = "snake_case")]
 pub enum TagKind {$(
   $tag($tag)
 ),*}
