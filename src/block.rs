@@ -144,7 +144,7 @@ impl Container for ReferenceDefinition {
       return None;
     }
     p.add_match(m.start..m.start, Comp::ReferenceDefinition.add());
-    p.add_match(m.start..m.start + m.cap1.len() + 1, Atom::ReferenceKey);
+    p.add_match(m.start..m.start + m.cap1.len() + 2, Atom::ReferenceKey);
     p.add_match(m.end - m.cap2.len()..m.end, Atom::ReferenceValue);
     p.pos = m.end;
     Some(Box::new(ReferenceDefinition { indent: p.indent }))

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
@@ -11,13 +13,15 @@ use crate::{
 };
 
 pub(crate) fn build(p: block::Tokenizer) -> Document {
-  let tag = Ctx { subject: p.subject, matches: p.matches, idx: 0 }.get_node(Comp::Doc);
-  Document { children: tag.children, debug: p.debug }
+  let mut ctx = Ctx { subject: p.subject, matches: p.matches, idx: 0, references: BTreeMap::new() };
+  let tag = ctx.get_node(Comp::Doc);
+  Document { children: tag.children, debug: p.debug, references: ctx.references }
 }
 
 struct Ctx {
   subject: String,
   matches: Vec<Match>,
+  references: BTreeMap<String, String>,
   idx: usize,
 }
 
@@ -77,12 +81,17 @@ impl Ctx {
                   self.idx += 1;
                   let span = self.get_node(Comp::Reference);
 
-                  let reference = match tag {
+                  let reference = if span.children.is_empty() {
+                    get_string_content(&result)
+                  } else {
+                    get_string_content(&span)
+                  };
+
+                  *match tag {
                     Comp::Imagetext => &mut result.cast::<Image>().reference,
                     Comp::Linktext => &mut result.cast::<Link>().reference,
                     _ => unreachable!(),
-                  };
-                  *reference = Some(get_string_content(&span));
+                  } = Some(reference)
                 }
               }
               Comp::CodeBlock => result.cast::<CodeBlock>().text = get_string_content(&result),
@@ -97,6 +106,20 @@ impl Ctx {
                 result.cast::<Verbatim>().text = text;
               }
               Comp::Url => result.cast::<Url>().destination = get_string_content(&result),
+              Comp::ReferenceDefinition => {
+                let mut key = None;
+                let mut value = None;
+                for c in &result.children {
+                  match &c.kind {
+                    TagKind::ReferenceKey(it) => key = Some(it.text.clone()),
+                    TagKind::ReferenceValue(it) => value = Some(it.text.clone()),
+                    _ => (),
+                  }
+                }
+                if let (Some(key), Some(value)) = (key, value) {
+                  self.references.insert(key, value);
+                }
+              }
               _ => (),
             }
             node.children.push(result)
@@ -107,7 +130,7 @@ impl Ctx {
               Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
               Atom::Emoji => Tag::new(Emoji::new(&self.subject[m.s + 1..m.e - 1])),
               Atom::ReferenceKey => {
-                Tag::new(ReferenceKey { text: self.subject[m.s..m.e].to_string() })
+                Tag::new(ReferenceKey { text: self.subject[m.s + 1..m.e - 1].to_string() })
               }
               Atom::ReferenceValue => {
                 Tag::new(ReferenceValue { text: self.subject[m.s..m.e].to_string() })
