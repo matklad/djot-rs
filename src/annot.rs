@@ -1,55 +1,14 @@
+mod generated;
+
 use std::fmt;
+
+pub(crate) use self::generated::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Annot {
   Atom(Atom),
   Add(Comp),
   Sub(Comp),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Atom {
-  Str,
-  Escape,
-  Hardbreak,
-  Nbsp,
-  Blankline,
-  ImageMarker,
-  LeftDoubleQuote,
-  RightDoubleQuote,
-  Ellipses,
-  Softbreak,
-  FootnoteReference,
-  OpenMarker,
-  Emoji,
-  ReferenceKey,
-  ReferenceValue,
-  CodeLanguage,
-  EmDash,
-  EnDash,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Comp {
-  Doc,
-  Verbatim,
-  Email,
-  Url,
-  Subscript,
-  Superscript,
-  Para,
-  CodeBlock,
-  Imagetext,
-  Linktext,
-  Reference,
-  Destination,
-  Emph,
-  Strong,
-  DoubleQuoted,
-  ReferenceDefinition,
-  Insert,
-  Delete,
-  Mark,
 }
 
 impl PartialEq<Atom> for Annot {

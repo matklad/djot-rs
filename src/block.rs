@@ -1,8 +1,8 @@
-use std::{fmt::Write, ops::Range};
+use std::ops::Range;
 
 use crate::{
   annot::{Annot, Atom, Comp},
-  inline,
+  format_to, inline,
   patterns::{find, find_at, PatMatch},
   Match, ParseOpts,
 };
@@ -337,8 +337,7 @@ impl Tokenizer {
     if self.opts.debug_matches {
       for &m in &self.matches {
         let ms = format!("{} {}-{}", m.a, m.s + 1, if m.e == m.s { m.e + 1 } else { m.e });
-        writeln!(self.debug, "{ms:<20} {:?}", self.subject.get(m.s..m.e).unwrap_or_default())
-          .expect("str format can't fail");
+        format_to!(self.debug, "{ms:<20} {:?}", self.subject.get(m.s..m.e).unwrap_or_default());
       }
     }
   }

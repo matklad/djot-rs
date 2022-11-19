@@ -8,6 +8,8 @@ mod inline;
 mod tree;
 mod emoji;
 mod html;
+#[cfg(test)]
+mod sourcegen;
 
 use std::{collections::BTreeMap, ops::Range};
 
@@ -81,3 +83,12 @@ impl Match {
     !self.is(annot)
   }
 }
+
+/// Appends formatted string to a `String`.
+macro_rules! _format_to {
+    ($buf:expr) => ();
+    ($buf:expr, $lit:literal $($arg:tt)*) => {
+        { use ::std::fmt::Write as _; let _ = ::std::write!($buf, $lit $($arg)*); }
+    };
+}
+pub(crate) use _format_to as format_to;
