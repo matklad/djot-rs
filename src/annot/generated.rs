@@ -42,3 +42,12 @@ pub(crate) enum Atom {
   EmDash,
   EnDash,
 }
+
+impl Atom {
+  pub(crate) fn is_left_atom(self) -> bool {
+    matches!(self,  | Atom::LeftDoubleQuote)
+  }
+  pub(crate) fn is_right_atom(self) -> bool {
+    matches!(self,  | Atom::RightDoubleQuote)
+  }
+}
