@@ -47,7 +47,12 @@ en_dash
 #[test]
 fn generate_annotations() {
   let (composites, atoms) = ANNOTATIONS.trim().split_once("\n\n").unwrap();
-  let mut buf = String::new();
+
+  let mut buf = "\
+use std::fmt;
+"
+  .to_string();
+
   emit_comp(&mut buf, composites);
   emit_atom(&mut buf, atoms);
   ensure_content("src/annot/generated.rs", &buf);
@@ -65,9 +70,42 @@ pub(crate) enum Comp {{
     format_to!(buf, "  {},\n", camel_case(ident))
   }
   format_to!(buf, "}}\n");
+
+  let mut display_arms = String::new();
+  for ident in composites.lines() {
+    format_to!(display_arms, "      Comp::{} => \"{ident}\",\n", camel_case(ident))
+  }
+
+  format_to!(
+    buf,
+    "
+impl fmt::Display for Comp {{
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {{
+    f.write_str(match self {{
+      {display_arms}
+    }})
+  }}
+}}
+    "
+  );
 }
 
 fn emit_atom(buf: &mut String, atoms: &str) {
+  let mut variants = String::new();
+  for ident in atoms.lines() {
+    format_to!(variants, "  {},\n", camel_case(ident))
+  }
+
+  format_to!(
+    buf,
+    "
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) enum Atom {{
+  {variants}
+}}
+"
+  );
+
   let mut left_atoms = String::new();
   let mut right_atoms = String::new();
   for ident in atoms.lines() {
@@ -82,17 +120,6 @@ fn emit_atom(buf: &mut String, atoms: &str) {
   format_to!(
     buf,
     "
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Atom {{
-  "
-  );
-  for ident in atoms.lines() {
-    format_to!(buf, "  {},\n", camel_case(ident))
-  }
-  format_to!(buf, "}}\n");
-  format_to!(
-    buf,
-    "
 impl Atom {{
   pub(crate) fn is_left_atom(self) -> bool {{
     matches!(self, {left_atoms})
@@ -102,6 +129,24 @@ impl Atom {{
   }}
 }}
 "
+  );
+
+  let mut display_arms = String::new();
+  for ident in atoms.lines() {
+    format_to!(display_arms, "      Atom::{} => \"{ident}\",\n", camel_case(ident))
+  }
+
+  format_to!(
+    buf,
+    "
+impl fmt::Display for Atom {{
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {{
+    f.write_str(match self {{
+      {display_arms}
+    }})
+  }}
+}}
+    "
   );
 }
 
