@@ -31,14 +31,14 @@ trait Container {
   fn restore_indent(&self) -> Option<usize> {
     None
   }
-  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer, stack: &mut Vec<Box<dyn Container>>) -> bool
   where
     Self: Sized;
   fn cont(&mut self, p: &mut Tokenizer) -> bool;
   fn close(self: Box<Self>, p: &mut Tokenizer);
 }
 
-const CONTAINERS: &[fn(&mut Tokenizer) -> Option<Box<dyn Container>>] =
+const CONTAINERS: &[fn(&mut Tokenizer, &mut Vec<Box<dyn Container>>) -> bool] =
   &[Para::open, CodeBlock::open, ReferenceDefinition::open];
 
 struct Para {
@@ -52,14 +52,16 @@ impl Container for Para {
   fn inline_parser(&mut self) -> Option<&mut inline::Tokenizer> {
     Some(&mut self.inline_parser)
   }
-  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer, stack: &mut Vec<Box<dyn Container>>) -> bool
   where
     Self: Sized,
   {
+    p.add_container(
+      stack,
+      Para { inline_parser: inline::Tokenizer::new(p.subject.clone(), p.opts.clone()) },
+    );
     p.add_match(p.pos..p.pos, Comp::Para.add());
-    Some(Box::new(Para {
-      inline_parser: inline::Tokenizer::new(p.subject.clone(), p.opts.clone()),
-    }))
+    true
   }
 
   fn cont(&mut self, p: &mut Tokenizer) -> bool {
@@ -84,7 +86,7 @@ impl Container for CodeBlock {
   fn restore_indent(&self) -> Option<usize> {
     Some(self.indent)
   }
-  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer, stack: &mut Vec<Box<dyn Container>>) -> bool
   where
     Self: Sized,
   {
@@ -95,8 +97,9 @@ impl Container for CodeBlock {
       m = p.find("^~~~([ \t]*)([^%s`]*)[ \t]*[\r\n]");
     }
     if !m.is_match {
-      return None;
+      return false;
     }
+    p.add_container(stack, CodeBlock { border, indent: p.indent });
     let lang = m.cap2;
 
     p.add_match(p.pos..p.pos + 3, Comp::CodeBlock.add());
@@ -106,7 +109,7 @@ impl Container for CodeBlock {
 
     p.pos = p.pos + 2;
     p.finished_line = true;
-    Some(Box::new(CodeBlock { border, indent: p.indent }))
+    true
   }
 
   fn cont(&mut self, p: &mut Tokenizer) -> bool {
@@ -135,21 +138,22 @@ impl Container for ReferenceDefinition {
     ""
   }
 
-  fn open(p: &mut Tokenizer) -> Option<Box<dyn Container>>
+  fn open(p: &mut Tokenizer, stack: &mut Vec<Box<dyn Container>>) -> bool
   where
     Self: Sized,
   {
     let m = p.find("^[[]([^\r\n]*)%]:[ \t]*(%S*)");
     if !m.is_match {
-      return None;
+      return false;
     }
+    p.add_container(stack, ReferenceDefinition { indent: p.indent });
     p.add_match(m.start..m.start, Comp::ReferenceDefinition.add());
     p.add_match(m.start..m.start + m.cap1.len() + 2, Atom::ReferenceKey);
     if !m.cap2.is_empty() {
       p.add_match(m.end - m.cap2.len()..m.end, Atom::ReferenceValue);
     }
     p.pos = m.end;
-    Some(Box::new(ReferenceDefinition { indent: p.indent }))
+    true
   }
 
   fn cont(&mut self, p: &mut Tokenizer) -> bool {
@@ -192,15 +196,19 @@ impl Tokenizer {
     self.matches.push(Match::new(range, annot))
   }
 
-  //  fn add_container(&mut self, container: Container) {
-  //    let last_matched = self.last_matched_container;
-  //    while containers.len() > last_matched
-  //      || (containers.len() > 0 && containers.last().unwrap().spec.content != "block")
-  //    {
-  //      containers.last().unwrap().spec.close(self)
-  //    }
-  //    containers.push(container)
-  //  }
+  fn add_container(
+    &mut self,
+    stack: &mut Vec<Box<dyn Container>>,
+    container: impl Container + 'static,
+  ) {
+    let last_matched = self.last_matched_container;
+    while stack.len() > last_matched
+      || (stack.len() > 0 && stack.last().unwrap().content() != "block")
+    {
+      stack.pop().unwrap().close(self)
+    }
+    stack.push(Box::new(container))
+  }
 
   fn skip_space(&mut self) {
     let m = find_at(&self.subject, "[^ \t]", self.pos);
@@ -263,16 +271,14 @@ impl Tokenizer {
           check_starts = false;
           for i in 1..CONTAINERS.len() {
             let open = CONTAINERS[i];
-            if let Some(cont) = open(self) {
-              let content = cont.content();
-              containers.push(cont);
+            if open(self, &mut containers) {
               self.last_matched_container = containers.len();
               if self.finished_line {
                 check_starts = false
               } else {
                 self.skip_space();
                 new_starts = true;
-                check_starts = content != "text"
+                check_starts = containers.last().unwrap().content() != "text"
               }
               break;
             }
@@ -304,8 +310,7 @@ impl Tokenizer {
                 self.add_match(self.pos..self.endeol, Atom::Blankline);
               }
             } else {
-              let para = CONTAINERS[0](self).unwrap();
-              containers.push(para);
+              CONTAINERS[0](self, &mut containers);
             }
           }
 

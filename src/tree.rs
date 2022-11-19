@@ -190,7 +190,7 @@ impl Ctx {
       if r.is_empty() {
         LinkDest::AutoRef
       } else {
-        LinkDest::Ref(r)
+        LinkDest::Ref(r.replace('\n', " "))
       }
     }
   }
