@@ -43,7 +43,7 @@ The URL can be split over multiple lines:
 .
 <p><a href="urlandurl">link</a></p>
 ```
-STOP
+
 ```
 [link](url
 andurl)
@@ -59,7 +59,7 @@ andurl)
 .
 <p><a href="">link</a></p>
 ```
-
+STOP
 ```
 [link][]
 [link][link2]

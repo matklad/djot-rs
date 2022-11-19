@@ -76,7 +76,7 @@ impl Ctx {
                     Comp::Linktext => &mut result.cast::<Link>().destination,
                     _ => unreachable!(),
                   };
-                  *destination = Some(get_string_content(&dest));
+                  *destination = Some(get_string_content(&dest).replace("\n", ""));
                 } else if self.matches[self.idx].is(Comp::Reference.add()) {
                   self.idx += 1;
                   let span = self.get_node(Comp::Reference);
