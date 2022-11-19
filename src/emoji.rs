@@ -5,14 +5,12 @@ pub(crate) fn find_emoji(s: &str) -> Option<&'static str> {
 
 #[test]
 fn emoji_list_is_sorted() {
-  use std::fmt::Write;
-
   let mut sorted = EMOJI_LIST.to_vec();
   sorted.sort_by_key(|&(k, _)| k);
   if EMOJI_LIST != sorted {
     let mut buf = String::new();
     for (k, v) in sorted {
-      writeln!(buf, r#"("{k}", "{v}"),"#).unwrap();
+      crate::format_to!(buf, r#"("{k}", "{v}"),"#);
     }
     std::fs::write("./emoji.sorted", &buf).unwrap();
     panic!("unsorted emoji list, sorted version in: ./emoji.sorted")
