@@ -81,11 +81,12 @@ impl Ctx {
                   self.idx += 1;
                   let span = self.get_node(Comp::Reference);
 
-                  let reference = if span.children.is_empty() {
+                  let mut reference = if span.children.is_empty() {
                     get_string_content(&result)
                   } else {
                     get_string_content(&span)
                   };
+                  reference = reference.replace('\n', " ");
 
                   *match tag {
                     Comp::Imagetext => &mut result.cast::<Image>().reference,

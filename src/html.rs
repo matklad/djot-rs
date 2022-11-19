@@ -40,9 +40,10 @@ impl<'a> Ctx<'a> {
         let dest = link
           .destination
           .clone()
-          .or_else(|| self.refs.get(link.reference.as_deref().unwrap_or_default()).cloned())
-          .unwrap_or_default();
-        attrs.insert("href".to_string(), dest);
+          .or_else(|| self.refs.get(link.reference.as_deref().unwrap_or_default()).cloned());
+        if let Some(dest) = dest {
+          attrs.insert("href".to_string(), dest);
+        }
         self.render_tag("a", &attrs);
         self.render_children(tag);
         self.out("</a>");
@@ -56,9 +57,10 @@ impl<'a> Ctx<'a> {
         let dest = image
           .destination
           .clone()
-          .or_else(|| self.refs.get(image.reference.as_deref().unwrap_or_default()).cloned())
-          .unwrap_or_default();
-        attrs.insert("src".to_string(), dest);
+          .or_else(|| self.refs.get(image.reference.as_deref().unwrap_or_default()).cloned());
+        if let Some(dest) = dest {
+          attrs.insert("src".to_string(), dest);
+        }
         self.render_tag("img", &attrs)
       }
       TagKind::CodeBlock(code_block) => {
