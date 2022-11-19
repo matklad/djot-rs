@@ -154,7 +154,7 @@ impl Tokenizer {
     }
     // if we get here, we didn't match an opener
     if can_open {
-      self.add_opener(c, Opener::new(startopener..pos));
+      self.add_opener(c, Opener::new(startopener..pos + 1));
       self.add_match(startopener..pos + 1, defaultmatch);
       pos + 1
     } else {
