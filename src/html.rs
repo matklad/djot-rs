@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
   ast::{Attrs, Tag, TagKind},
   tree::get_string_content,
@@ -5,7 +7,8 @@ use crate::{
 };
 
 pub(crate) fn convert(opts: &HtmlOpts, doc: &Document) -> String {
-  let mut ctx = Ctx { opts, res: String::new() };
+  let refs = &doc.references;
+  let mut ctx = Ctx { opts, refs, res: String::new() };
   ctx.render_doc(doc);
   ctx.res
 }
@@ -13,6 +16,7 @@ pub(crate) fn convert(opts: &HtmlOpts, doc: &Document) -> String {
 struct Ctx<'a> {
   #[allow(unused)]
   opts: &'a HtmlOpts,
+  refs: &'a BTreeMap<String, String>,
   res: String,
 }
 impl<'a> Ctx<'a> {
@@ -31,12 +35,14 @@ impl<'a> Ctx<'a> {
         self.out("</p>");
         self.out("\n")
       }
-      TagKind::Link(image) => {
+      TagKind::Link(link) => {
         let mut attrs = Attrs::new();
-        attrs.insert(
-          "href".to_string(),
-          image.destination.clone().unwrap_or_else(|| "url".to_string()),
-        );
+        let dest = link
+          .destination
+          .clone()
+          .or_else(|| self.refs.get(link.reference.as_deref().unwrap_or_default()).cloned())
+          .unwrap_or_default();
+        attrs.insert("href".to_string(), dest);
         self.render_tag("a", &attrs);
         self.render_children(tag);
         self.out("</a>");
@@ -47,10 +53,12 @@ impl<'a> Ctx<'a> {
         if !alt_text.is_empty() {
           attrs.insert("alt".to_string(), alt_text);
         }
-        attrs.insert(
-          "src".to_string(),
-          image.destination.clone().unwrap_or_else(|| "url".to_string()),
-        );
+        let dest = image
+          .destination
+          .clone()
+          .or_else(|| self.refs.get(image.reference.as_deref().unwrap_or_default()).cloned())
+          .unwrap_or_default();
+        attrs.insert("src".to_string(), dest);
         self.render_tag("img", &attrs)
       }
       TagKind::CodeBlock(code_block) => {

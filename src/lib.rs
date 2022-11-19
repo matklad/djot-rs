@@ -8,7 +8,7 @@ mod tree;
 mod emoji;
 mod html;
 
-use std::ops::Range;
+use std::{collections::BTreeMap, ops::Range};
 
 use annot::Annot;
 
@@ -16,6 +16,7 @@ use annot::Annot;
 pub struct Document {
   pub children: Vec<ast::Tag>,
   pub debug: String,
+  pub references: BTreeMap<String, String>,
 }
 
 impl Document {

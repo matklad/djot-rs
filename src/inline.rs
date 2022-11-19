@@ -269,7 +269,7 @@ impl Tokenizer {
             self.add_match(opener.subepos - 1..opener.subepos, Comp::Reference.add());
             self.add_match(pos..pos, Comp::Reference.sub());
             // convert all matches to str
-            self.str_matches(opener.subepos + 1, pos);
+            self.str_matches(opener.subepos, pos);
             // remove from openers
             self.clear_openers(opener.spos, pos);
             return Some(pos + 1);
