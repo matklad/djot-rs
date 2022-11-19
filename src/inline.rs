@@ -108,6 +108,8 @@ impl Tokenizer {
     mut defaultmatch: Atom,
     opentest: Option<impl FnOnce(&str, usize) -> PatMatch>,
   ) -> usize {
+    debug_assert!(self.subject[pos..].as_bytes().starts_with(&[c]));
+
     let mut can_open = find_at(&self.subject, "^%S", pos + 1).is_match;
     let mut can_close = !self.subject[..pos].ends_with(is_space);
     let has_open_marker =
