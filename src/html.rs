@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-  ast::{Attrs, Tag, TagKind},
+  ast::{self, Attrs, Tag, TagKind},
   tree::get_string_content,
   Document, HtmlOpts,
 };
@@ -16,7 +16,7 @@ pub(crate) fn convert(opts: &HtmlOpts, doc: &Document) -> String {
 struct Ctx<'a> {
   #[allow(unused)]
   opts: &'a HtmlOpts,
-  refs: &'a BTreeMap<String, String>,
+  refs: &'a BTreeMap<String, ast::Tag>,
   res: String,
 }
 impl<'a> Ctx<'a> {
@@ -37,10 +37,7 @@ impl<'a> Ctx<'a> {
       }
       TagKind::Link(link) => {
         let mut attrs = Attrs::new();
-        let dest = link
-          .destination
-          .clone()
-          .or_else(|| self.refs.get(link.reference.as_deref().unwrap_or_default()).cloned());
+        let dest = self.resolve_reference(link.destination.as_deref(), link.reference.as_deref());
         if let Some(dest) = dest {
           attrs.insert("href".to_string(), dest);
         }
@@ -54,10 +51,7 @@ impl<'a> Ctx<'a> {
         if !alt_text.is_empty() {
           attrs.insert("alt".to_string(), alt_text);
         }
-        let dest = image
-          .destination
-          .clone()
-          .or_else(|| self.refs.get(image.reference.as_deref().unwrap_or_default()).cloned());
+        let dest = self.resolve_reference(image.destination.as_deref(), image.reference.as_deref());
         if let Some(dest) = dest {
           attrs.insert("src".to_string(), dest);
         }
@@ -161,6 +155,25 @@ impl<'a> Ctx<'a> {
       self.out(&format!("{v:?}"));
     }
     self.out(">");
+  }
+
+  fn resolve_reference(
+    &self,
+    destination: Option<&str>,
+    reference: Option<&str>,
+  ) -> Option<String> {
+    if let Some(destination) = destination {
+      return Some(destination.to_string());
+    }
+    if let Some(reference) = reference {
+      if let Some(reference_definition) = self.refs.get(reference) {
+        if let ast::TagKind::ReferenceDefinition(reference_definition) = &reference_definition.kind
+        {
+          return Some(reference_definition.destination.clone());
+        }
+      }
+    }
+    None
   }
 
   fn out(&mut self, s: &str) {

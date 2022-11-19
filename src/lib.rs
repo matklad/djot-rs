@@ -16,8 +16,8 @@ use crate::annot::Annot;
 #[derive(Debug, Clone)]
 pub struct Document {
   pub children: Vec<ast::Tag>,
+  pub references: BTreeMap<String, ast::Tag>,
   pub debug: String,
-  pub references: BTreeMap<String, String>,
 }
 
 #[derive(Default, Clone)]
@@ -52,9 +52,14 @@ impl Document {
     struct DocRepr<'a> {
       tag: &'static str,
       children: &'a [ast::Tag],
+      references: &'a BTreeMap<String, ast::Tag>,
     }
-    serde_json::to_string_pretty(&DocRepr { tag: "doc", children: self.children.as_slice() })
-      .unwrap()
+    serde_json::to_string_pretty(&DocRepr {
+      tag: "doc",
+      children: self.children.as_slice(),
+      references: &self.references,
+    })
+    .unwrap()
   }
 }
 
