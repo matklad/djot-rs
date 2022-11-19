@@ -114,13 +114,6 @@ pub struct Url {
 }
 
 #[derive(Debug, Default, Clone, serde::Serialize)]
-pub struct ReferenceDefinition {
-  #[serde(skip_serializing_if = "Attrs::is_empty")]
-  pub attrs: Attrs,
-  pub destination: String,
-}
-
-#[derive(Debug, Default, Clone, serde::Serialize)]
 pub struct SoftBreak {
   #[serde(skip_serializing_if = "Attrs::is_empty")]
   pub attrs: Attrs,
@@ -177,7 +170,6 @@ pub enum Tag {
   Span(Span),
   DoubleQuoted(DoubleQuoted),
   Url(Url),
-  ReferenceDefinition(ReferenceDefinition),
   SoftBreak(SoftBreak),
   EmDash(EmDash),
   EnDash(EnDash),

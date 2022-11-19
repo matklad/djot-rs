@@ -134,7 +134,6 @@ impl<'a> Ctx<'a> {
       }
       Tag::EmDash(_) => self.out("&mdash;"),
       Tag::EnDash(_) => self.out("&ndash;"),
-      Tag::ReferenceDefinition(_) => (),
     }
   }
 

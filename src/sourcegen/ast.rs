@@ -19,7 +19,6 @@ span
 double_quoted
 url destination: String
 
-reference_definition destination: String
 soft_break
 em_dash
 en_dash
