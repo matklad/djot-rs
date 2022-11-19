@@ -32,8 +32,8 @@ struct Opener {
 }
 
 impl Opener {
-  fn new(spos: usize, epos: usize) -> Self {
-    Self { spos, epos, annot: "", subspos: 0, subepos: 0 }
+  fn new(range: Range<usize>) -> Opener {
+    Opener { spos: range.start, epos: range.end, annot: "", subspos: 0, subepos: 0 }
   }
 }
 
@@ -154,7 +154,7 @@ impl Tokenizer {
     }
     // if we get here, we didn't match an opener
     if can_open {
-      self.add_opener(c, Opener::new(startopener, pos));
+      self.add_opener(c, Opener::new(startopener..pos));
       self.add_match(startopener..pos + 1, defaultmatch);
       pos + 1
     } else {
@@ -243,7 +243,7 @@ impl Tokenizer {
           self.add_match(pos..m.end, Atom::FootnoteReference);
           return Some(m.end);
         } else {
-          self.add_opener(b'[', Opener::new(pos, pos + 1));
+          self.add_opener(b'[', Opener::new(pos..pos + 1));
           self.add_match(pos..pos + 1, Atom::Str);
           return Some(pos + 1);
         }
@@ -295,7 +295,7 @@ impl Tokenizer {
         if !self.destination {
           return None;
         }
-        self.add_opener(b'(', Opener::new(pos, pos + 1));
+        self.add_opener(b'(', Opener::new(pos..pos + 1));
         self.add_match(pos..pos + 1, Atom::Str);
         return Some(pos + 1);
       }
