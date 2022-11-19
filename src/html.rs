@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-  ast::{self, Attrs, Tag, TagKind},
+  ast::{self, Attrs, Tag},
   tree::get_string_content,
   Document, HtmlOpts,
 };
@@ -16,7 +16,7 @@ pub(crate) fn convert(opts: &HtmlOpts, doc: &Document) -> String {
 struct Ctx<'a> {
   #[allow(unused)]
   opts: &'a HtmlOpts,
-  refs: &'a BTreeMap<String, ast::Tag>,
+  refs: &'a BTreeMap<String, ast::ReferenceDefinition>,
   res: String,
 }
 impl<'a> Ctx<'a> {
@@ -26,28 +26,27 @@ impl<'a> Ctx<'a> {
     }
   }
   fn render(&mut self, tag: &Tag) {
-    match &tag.kind {
-      TagKind::Doc(_doc) => self.render_children(tag),
-      TagKind::Heading(_) => todo!(),
-      TagKind::Para(_para) => {
-        self.render_tag("p", &tag.attrs);
-        self.render_children(tag);
+    match tag {
+      Tag::Heading(_) => todo!(),
+      Tag::Para(para) => {
+        self.render_tag("p", &para.attrs);
+        self.render_children(&para.children);
         self.out("</p>");
         self.out("\n")
       }
-      TagKind::Link(link) => {
+      Tag::Link(link) => {
         let mut attrs = Attrs::new();
         let dest = self.resolve_reference(link.destination.as_deref(), link.reference.as_deref());
         if let Some(dest) = dest {
           attrs.insert("href".to_string(), dest);
         }
         self.render_tag("a", &attrs);
-        self.render_children(tag);
+        self.render_children(&link.children);
         self.out("</a>");
       }
-      TagKind::Image(image) => {
+      Tag::Image(image) => {
         let mut attrs = Attrs::new();
-        let alt_text = get_string_content(tag);
+        let alt_text = get_string_content(&image.children);
         if !alt_text.is_empty() {
           attrs.insert("alt".to_string(), alt_text);
         }
@@ -57,8 +56,8 @@ impl<'a> Ctx<'a> {
         }
         self.render_tag("img", &attrs)
       }
-      TagKind::CodeBlock(code_block) => {
-        self.render_tag("pre", &tag.attrs);
+      Tag::CodeBlock(code_block) => {
+        self.render_tag("pre", &code_block.attrs);
         let mut attrs = Attrs::default();
         if let Some(lang) = &code_block.lang {
           attrs.insert("class".to_string(), format!("language-{lang}"));
@@ -67,80 +66,80 @@ impl<'a> Ctx<'a> {
         self.out_escape_html(&code_block.text);
         self.out("</code></pre>\n");
       }
-      TagKind::Strong(_) => {
-        self.render_tag("strong", &tag.attrs);
-        self.render_children(tag);
+      Tag::Strong(strong) => {
+        self.render_tag("strong", &strong.attrs);
+        self.render_children(&strong.children);
         self.out("</strong>");
       }
-      TagKind::Emph(_) => {
-        self.render_tag("em", &tag.attrs);
-        self.render_children(tag);
+      Tag::Emph(emph) => {
+        self.render_tag("em", &emph.attrs);
+        self.render_children(&emph.children);
         self.out("</em>");
       }
-      TagKind::DoubleQuoted(_) => {
+      Tag::DoubleQuoted(double_quoted) => {
         self.out("&ldquo;");
-        self.render_children(tag);
+        self.render_children(&double_quoted.children);
         self.out("&rdquo;");
       }
-      TagKind::Softbreak(_) => self.out("\n"),
-      TagKind::Url(url) => {
+      Tag::SoftBreak(_) => self.out("\n"),
+      Tag::Url(url) => {
         let mut attrs = Attrs::new();
         attrs.insert("href".to_string(), url.destination.clone());
         self.render_tag("a", &attrs);
-        self.render_children(tag);
+        self.out_escape_html(&url.destination);
         self.out("</a>");
       }
-      TagKind::Str(str) => self.out_escape_html(&str.text),
-      TagKind::Emoji(emoji) => {
-        if let Some(emoji) = crate::emoji::find_emoji(&emoji.text) {
+      Tag::Str(str) => self.out_escape_html(&str.text),
+      Tag::Emoji(emoji) => {
+        if let Some(emoji) = crate::emoji::find_emoji(&emoji.alias) {
           self.out(emoji);
         } else {
-          self.out(&format!(":{}:", emoji.text));
+          self.out(&format!(":{}:", emoji.alias));
         }
       }
-      TagKind::Verbatim(verbatim) => {
-        self.render_tag("code", &tag.attrs);
+      Tag::Verbatim(verbatim) => {
+        self.render_tag("code", &verbatim.attrs);
         self.out_escape_html(&verbatim.text);
         self.out("</code>");
       }
-      TagKind::Span(_) => {
-        self.render_tag("span", &tag.attrs);
-        self.render_children(tag);
+      Tag::Span(span) => {
+        self.render_tag("span", &span.attrs);
+        self.render_children(&span.children);
         self.out("</span>");
       }
-      TagKind::Insert(_) => {
-        self.render_tag("ins", &tag.attrs);
-        self.render_children(tag);
+      Tag::Insert(insert) => {
+        self.render_tag("ins", &insert.attrs);
+        self.render_children(&insert.children);
         self.out("</ins>");
       }
-      TagKind::Delete(_) => {
-        self.render_tag("del", &tag.attrs);
-        self.render_children(tag);
+      Tag::Delete(delete) => {
+        self.render_tag("del", &delete.attrs);
+        self.render_children(&delete.children);
         self.out("</del>");
       }
-      TagKind::Mark(_) => {
-        self.render_tag("mark", &tag.attrs);
-        self.render_children(tag);
+      Tag::Mark(mark) => {
+        self.render_tag("mark", &mark.attrs);
+        self.render_children(&mark.children);
         self.out("</mark>");
       }
-      TagKind::Superscript(_) => {
-        self.render_tag("sup", &tag.attrs);
-        self.render_children(tag);
+      Tag::Superscript(superscript) => {
+        self.render_tag("sup", &superscript.attrs);
+        self.render_children(&superscript.children);
         self.out("</sup>");
       }
-      TagKind::Subscript(_) => {
-        self.render_tag("sub", &tag.attrs);
-        self.render_children(tag);
+      Tag::Subscript(subscript) => {
+        self.render_tag("sub", &subscript.attrs);
+        self.render_children(&subscript.children);
         self.out("</sub>");
       }
-      TagKind::EmDash(_) => self.out("&mdash;"),
-      TagKind::EnDash(_) => self.out("&ndash;"),
-      TagKind::ReferenceDefinition(_) | TagKind::ReferenceKey(_) | TagKind::ReferenceValue(_) => (),
+      Tag::EmDash(_) => self.out("&mdash;"),
+      Tag::EnDash(_) => self.out("&ndash;"),
+      Tag::ReferenceDefinition(_) => (),
     }
   }
 
-  fn render_children(&mut self, tag: &Tag) {
-    for child in &tag.children {
+  fn render_children(&mut self, children: &[Tag]) {
+    for child in children {
       self.render(child)
     }
   }
@@ -167,10 +166,7 @@ impl<'a> Ctx<'a> {
     }
     if let Some(reference) = reference {
       if let Some(reference_definition) = self.refs.get(reference) {
-        if let ast::TagKind::ReferenceDefinition(reference_definition) = &reference_definition.kind
-        {
-          return Some(reference_definition.destination.clone());
-        }
+        return Some(reference_definition.destination.clone());
       }
     }
     None

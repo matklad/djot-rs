@@ -15,10 +15,10 @@ use std::{collections::BTreeMap, ops::Range};
 
 use crate::annot::Annot;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Document {
   pub children: Vec<ast::Tag>,
-  pub references: BTreeMap<String, ast::Tag>,
+  pub references: BTreeMap<String, ast::ReferenceDefinition>,
   pub debug: String,
 }
 
@@ -54,7 +54,7 @@ impl Document {
     struct DocRepr<'a> {
       tag: &'static str,
       children: &'a [ast::Tag],
-      references: &'a BTreeMap<String, ast::Tag>,
+      references: &'a BTreeMap<String, ast::ReferenceDefinition>,
     }
     serde_json::to_string_pretty(&DocRepr {
       tag: "doc",

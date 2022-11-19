@@ -4,7 +4,6 @@ use crate::{
 };
 
 const ANNOTATIONS: &str = "
-doc
 verbatim
 email
 url

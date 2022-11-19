@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Delete, Doc, DoubleQuoted, EmDash, Emoji, Emph, EnDash, Image, Insert, Link, Mark,
-    Para, ReferenceDefinition, ReferenceKey, ReferenceValue, Softbreak, Span, Str, Strong,
-    Subscript, Superscript, Tag, TagKind, Url, Verbatim,
+    CodeBlock, Delete, DoubleQuoted, Emoji, Emph, Image, Insert, Link, Mark, Para,
+    ReferenceDefinition, SoftBreak, Str, Strong, Subscript, Superscript, Tag, Url, Verbatim,
   },
   block,
   patterns::find,
@@ -14,158 +13,260 @@ use crate::{
 
 pub(crate) fn build(p: block::Tokenizer) -> Document {
   let mut ctx = Ctx { subject: p.subject, matches: p.matches, idx: 0, references: BTreeMap::new() };
-  let tag = ctx.get_node(Comp::Doc);
-  Document { children: tag.children, debug: p.debug, references: ctx.references }
+  let mut doc = ctx.get_doc();
+  doc.debug = p.debug;
+  doc.references = ctx.references;
+  doc
 }
 
 struct Ctx {
   subject: String,
   matches: Vec<Match>,
-  references: BTreeMap<String, Tag>,
+  references: BTreeMap<String, ReferenceDefinition>,
   idx: usize,
 }
 
 impl Ctx {
-  fn get_node(&mut self, maintag: Comp) -> Tag {
-    let mut node = Tag::new(match maintag {
-      Comp::Doc => TagKind::Doc(Doc {}),
-      Comp::Para => Para {}.into(),
-      Comp::Imagetext => Image { destination: None, reference: None }.into(),
-      Comp::Linktext => Link { destination: None, reference: None }.into(),
-      Comp::CodeBlock => CodeBlock { text: String::new(), lang: None }.into(),
-      Comp::Destination => Doc {}.into(),
-      Comp::Strong => Strong {}.into(),
-      Comp::Emph => Emph {}.into(),
-      Comp::Insert => Insert {}.into(),
-      Comp::Delete => Delete {}.into(),
-      Comp::Mark => Mark {}.into(),
-      Comp::Superscript => Superscript {}.into(),
-      Comp::Subscript => Subscript {}.into(),
-      Comp::DoubleQuoted => DoubleQuoted {}.into(),
-      Comp::Verbatim => Verbatim { text: String::new() }.into(),
-      Comp::Reference => Span {}.into(),
-      Comp::ReferenceDefinition => ReferenceDefinition { destination: String::new() }.into(),
-      Comp::Url => Url { destination: String::new() }.into(),
-      _ => panic!("unhandled {maintag}"),
-    });
+  fn get_doc(&mut self) -> Document {
+    let mut res = Document::default();
     while self.idx < self.matches.len() {
-      let m = self.matches[self.idx];
+      res.children.extend(self.get_tag())
+    }
+    res
+  }
 
-      if m.is(Atom::Blankline) || m.is(Atom::ImageMarker) || m.is(Atom::Escape) {
-        self.idx += 1;
-        continue;
-      }
-
-      if m.is(maintag.sub()) {
-        self.idx += 1;
-        return node;
-      } else {
-        match m.a {
-          Annot::Add(tag) => {
-            let _startidx = self.idx;
-            self.idx += 1;
-            let mut result = self.get_node(tag);
-            match tag {
-              Comp::Imagetext | Comp::Linktext => {
-                if self.matches[self.idx].is(Comp::Destination.add()) {
-                  self.idx += 1;
-                  let dest = self.get_node(Comp::Destination);
-
-                  let destination = match tag {
-                    Comp::Imagetext => &mut result.cast::<Image>().destination,
-                    Comp::Linktext => &mut result.cast::<Link>().destination,
-                    _ => unreachable!(),
-                  };
-                  *destination = Some(get_string_content(&dest).replace("\n", ""));
-                } else if self.matches[self.idx].is(Comp::Reference.add()) {
-                  self.idx += 1;
-                  let span = self.get_node(Comp::Reference);
-
-                  let mut reference = if span.children.is_empty() {
-                    get_string_content(&result)
-                  } else {
-                    get_string_content(&span)
-                  };
-                  reference = reference.replace('\n', " ");
-
-                  *match tag {
-                    Comp::Imagetext => &mut result.cast::<Image>().reference,
-                    Comp::Linktext => &mut result.cast::<Link>().reference,
-                    _ => unreachable!(),
-                  } = Some(reference)
-                }
-              }
-              Comp::CodeBlock => result.cast::<CodeBlock>().text = get_string_content(&result),
-              Comp::Verbatim => {
-                let mut text = get_string_content(&result);
-                if find(text.as_str(), "^ +`").is_match {
-                  text.remove(0);
-                }
-                if find(text.as_str(), "` +$").is_match {
-                  text.pop();
-                }
-                result.cast::<Verbatim>().text = text;
-              }
-              Comp::Url => result.cast::<Url>().destination = get_string_content(&result),
-              Comp::ReferenceDefinition => {
-                let mut key = String::new();
-                let mut value = String::new();
-                for c in &result.children {
-                  match &c.kind {
-                    TagKind::ReferenceKey(it) => key.push_str(&it.text),
-                    TagKind::ReferenceValue(it) => value.push_str(&it.text),
-                    _ => (),
-                  }
-                }
-                result.children.clear();
-                result.cast::<ReferenceDefinition>().destination = value;
-                self.references.insert(key, result);
-                continue;
-              }
-              _ => (),
-            }
-            node.children.push(result)
-          }
-          Annot::Sub(_) => panic!("unexpected {}", m.a),
-          Annot::Atom(atom) => {
-            let tag = match atom {
-              Atom::Str => Tag::new(Str::new(&self.subject[m.s..m.e])),
-              Atom::Emoji => Tag::new(Emoji::new(&self.subject[m.s + 1..m.e - 1])),
-              Atom::ReferenceKey => {
-                Tag::new(ReferenceKey { text: self.subject[m.s + 1..m.e - 1].to_string() })
-              }
-              Atom::ReferenceValue => {
-                Tag::new(ReferenceValue { text: self.subject[m.s..m.e].to_string() })
-              }
-              Atom::Softbreak => Tag::new(Softbreak {}),
-              Atom::CodeLanguage => {
-                node.cast::<CodeBlock>().lang = Some(self.subject[m.s..m.e].to_string());
-                self.idx += 1;
-                continue;
-              }
-              Atom::EmDash => Tag::new(EmDash {}),
-              Atom::EnDash => Tag::new(EnDash {}),
-              _ => todo!("todo atom: {atom}"),
-            };
-            node.children.push(tag);
-            self.idx += 1;
-          }
+  fn get_tag(&mut self) -> Option<Tag> {
+    self.skip_trivia();
+    let m = self.matches[self.idx];
+    self.idx += 1;
+    let res = match m.a {
+      Annot::Add(comp) => match comp {
+        Comp::CodeBlock => Tag::CodeBlock(self.get_code_block()),
+        Comp::Para => Tag::Para(self.get_para()),
+        Comp::Verbatim => Tag::Verbatim(self.get_verbatim()),
+        Comp::Strong => Tag::Strong(self.get_strong()),
+        Comp::Emph => Tag::Emph(self.get_emph()),
+        Comp::Insert => Tag::Insert(self.get_insert()),
+        Comp::Delete => Tag::Delete(self.get_delete()),
+        Comp::Mark => Tag::Mark(self.get_mark()),
+        Comp::Subscript => Tag::Subscript(self.get_subscript()),
+        Comp::Superscript => Tag::Superscript(self.get_superscript()),
+        Comp::DoubleQuoted => Tag::DoubleQuoted(self.get_double_quoted()),
+        Comp::Linktext => Tag::Link(self.get_link()),
+        Comp::Imagetext => Tag::Image(self.get_image()),
+        Comp::Url => Tag::Url(self.get_url()),
+        Comp::ReferenceDefinition => {
+          self.get_reference_definition();
+          return None;
         }
+        _ => todo!("{comp:?}"),
+      },
+      Annot::Sub(sub) => unreachable!("-{sub}"),
+      Annot::Atom(atom) => match atom {
+        Atom::Str => {
+          let mut res = Str::default();
+          res.text = self.subject[m.s..m.e].to_string();
+          Tag::Str(res)
+        }
+        Atom::Emoji => {
+          let mut res = Emoji::default();
+          res.alias = self.subject[m.s + 1..m.e - 1].to_string();
+          Tag::Emoji(res)
+        }
+        Atom::Softbreak => Tag::SoftBreak(SoftBreak::default()),
+        _ => todo!("{atom:?}"),
+      },
+    };
+    Some(res)
+  }
+
+  fn get_code_block(&mut self) -> CodeBlock {
+    let mut res = CodeBlock::default();
+    let m = self.matches[self.idx];
+    if m.is(Atom::CodeLanguage) {
+      res.lang = Some(self.subject[m.s..m.e].to_string());
+      self.idx += 1;
+    }
+    res.text = self.get_text_until(Comp::CodeBlock);
+    res
+  }
+
+  fn get_para(&mut self) -> Para {
+    let mut res = Para::default();
+    res.children = self.get_tags_until(Comp::Para);
+    res
+  }
+
+  fn get_verbatim(&mut self) -> Verbatim {
+    let mut res = Verbatim::default();
+    res.text = self.get_text_until(Comp::Verbatim);
+    if find(res.text.as_str(), "^ +`").is_match {
+      res.text.remove(0);
+    }
+    if find(res.text.as_str(), "` +$").is_match {
+      res.text.pop();
+    }
+    res
+  }
+
+  fn get_strong(&mut self) -> Strong {
+    let mut res = Strong::default();
+    res.children = self.get_tags_until(Comp::Strong);
+    res
+  }
+
+  fn get_emph(&mut self) -> Emph {
+    let mut res = Emph::default();
+    res.children = self.get_tags_until(Comp::Emph);
+    res
+  }
+
+  fn get_insert(&mut self) -> Insert {
+    let mut res = Insert::default();
+    res.children = self.get_tags_until(Comp::Insert);
+    res
+  }
+
+  fn get_delete(&mut self) -> Delete {
+    let mut res = Delete::default();
+    res.children = self.get_tags_until(Comp::Delete);
+    res
+  }
+
+  fn get_mark(&mut self) -> Mark {
+    let mut res = Mark::default();
+    res.children = self.get_tags_until(Comp::Mark);
+    res
+  }
+
+  fn get_subscript(&mut self) -> Subscript {
+    let mut res = Subscript::default();
+    res.children = self.get_tags_until(Comp::Subscript);
+    res
+  }
+
+  fn get_superscript(&mut self) -> Superscript {
+    let mut res = Superscript::default();
+    res.children = self.get_tags_until(Comp::Superscript);
+    res
+  }
+
+  fn get_double_quoted(&mut self) -> DoubleQuoted {
+    let mut res = DoubleQuoted::default();
+    res.children = self.get_tags_until(Comp::DoubleQuoted);
+    res
+  }
+
+  fn get_link(&mut self) -> Link {
+    let mut res = Link::default();
+    res.children = self.get_tags_until(Comp::Linktext);
+    match self.get_dest() {
+      LinkDest::Dest(dest) => res.destination = Some(dest),
+      LinkDest::Ref(r) => res.reference = Some(r),
+      LinkDest::AutoRef => res.reference = Some(get_string_content(&res.children)),
+    }
+    res
+  }
+
+  fn get_image(&mut self) -> Image {
+    let mut res = Image::default();
+    res.children = self.get_tags_until(Comp::Imagetext);
+    match self.get_dest() {
+      LinkDest::Dest(dest) => res.destination = Some(dest),
+      LinkDest::Ref(r) => res.reference = Some(r),
+      LinkDest::AutoRef => res.reference = Some(get_string_content(&res.children)),
+    }
+    res
+  }
+
+  fn get_dest(&mut self) -> LinkDest {
+    let m = self.matches[self.idx];
+    self.idx += 1;
+    if m.is(Comp::Destination.add()) {
+      let dest = self.get_text_until(Comp::Destination);
+      LinkDest::Dest(dest.replace('\n', ""))
+    } else {
+      let r = self.get_text_until(Comp::Reference);
+      if r.is_empty() {
+        LinkDest::AutoRef
+      } else {
+        LinkDest::Ref(r)
       }
     }
-    node
+  }
+
+  fn get_url(&mut self) -> Url {
+    let mut res = Url::default();
+    res.destination = self.get_text_until(Comp::Url);
+    res
+  }
+
+  fn get_reference_definition(&mut self) {
+    let mut res = ReferenceDefinition::default();
+    let key = self.matches[self.idx];
+    self.idx += 1;
+    loop {
+      let m = self.matches[self.idx];
+      if !m.is(Atom::ReferenceValue) {
+        break;
+      }
+      self.idx += 1;
+      res.destination.push_str(&self.subject[m.s..m.e]);
+    }
+    assert!(self.matches[self.idx].is(Comp::ReferenceDefinition.sub()));
+    self.idx += 1;
+    self.references.insert(self.subject[key.s + 1..key.e - 1].to_string(), res);
+  }
+
+  fn get_tags_until(&mut self, comp: Comp) -> Vec<Tag> {
+    let mut res = vec![];
+    while !self.matches[self.idx].is(comp.sub()) {
+      res.extend(self.get_tag());
+    }
+    self.idx += 1;
+    res
+  }
+
+  fn get_text_until(&mut self, comp: Comp) -> String {
+    let mut res = String::new();
+    loop {
+      let m = self.matches[self.idx];
+      self.idx += 1;
+      if m.is(comp.sub()) {
+        break;
+      }
+      res.push_str(&self.subject[m.s..m.e]);
+    }
+    res
+  }
+
+  fn skip_trivia(&mut self) {
+    while self.idx < self.matches.len() {
+      let m = self.matches[self.idx];
+      if !(m.is(Atom::Blankline) || m.is(Atom::ImageMarker) || m.is(Atom::Escape)) {
+        break;
+      }
+      self.idx += 1;
+      continue;
+    }
   }
 }
 
-pub(crate) fn get_string_content(dest: &Tag) -> String {
+pub(crate) fn get_string_content(tags: &[Tag]) -> String {
   let mut res = String::new();
-  match &dest.kind {
-    TagKind::Softbreak(_) => res.push('\n'),
-    TagKind::Str(str) => res.push_str(&str.text),
-    _ => (),
-  }
-  for c in &dest.children {
-    res.push_str(&get_string_content(c))
+  for tag in tags {
+    match tag {
+      Tag::SoftBreak(_) => res.push('\n'),
+      Tag::Str(str) => res.push_str(&str.text),
+      Tag::Emph(emph) => res.push_str(&get_string_content(&emph.children)),
+      _ => (),
+    }
   }
   res
+}
+
+enum LinkDest {
+  Dest(String),
+  Ref(String),
+  AutoRef,
 }
