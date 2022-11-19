@@ -60,6 +60,8 @@ tags![
   Insert,
   Delete,
   Mark,
+  Superscript,
+  Subscript,
   EmDash,
   EnDash,
 ];
@@ -118,6 +120,12 @@ pub struct Delete {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Mark {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Superscript {}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Subscript {}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct EmDash {}

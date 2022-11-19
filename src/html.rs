@@ -119,6 +119,16 @@ impl<'a> Ctx<'a> {
         self.render_children(tag);
         self.out("</mark>");
       }
+      TagKind::Superscript(_) => {
+        self.render_tag("sup", &tag.attrs);
+        self.render_children(tag);
+        self.out("</sup>");
+      }
+      TagKind::Subscript(_) => {
+        self.render_tag("sub", &tag.attrs);
+        self.render_children(tag);
+        self.out("</sub>");
+      }
       TagKind::EmDash(_) => self.out("&mdash;"),
       TagKind::EnDash(_) => self.out("&ndash;"),
       TagKind::ReferenceDefinition(_) | TagKind::ReferenceKey(_) | TagKind::ReferenceValue(_) => (),

@@ -336,7 +336,7 @@ impl Parser {
       b'_' => Some(self.between_matched(pos, b'_', Comp::Emph, Atom::Str)),
       b'*' => Some(self.between_matched(pos, b'*', Comp::Strong, Atom::Str)),
       b'{' => {
-        if self.subject[pos + 1..endpos].starts_with(|c: char| "_*^+='\"-".contains(c)) {
+        if self.subject[pos + 1..endpos].starts_with(|c: char| "_*~^+='\"-".contains(c)) {
           self.add_match(pos, pos + 1, Atom::OpenMarker);
           return Some(pos + 1);
         } else {
