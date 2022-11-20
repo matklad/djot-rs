@@ -26,13 +26,12 @@ pub struct Tokenizer {
 struct Opener {
   range: Range<usize>,
   annot: &'static str,
-  subspos: usize,
-  subepos: usize,
+  sub_range: Range<usize>,
 }
 
 impl Opener {
   fn new(range: Range<usize>) -> Opener {
-    Opener { range, annot: "", subspos: 0, subepos: 0 }
+    Opener { range, annot: "", sub_range: 0..0 }
   }
 }
 
@@ -146,7 +145,7 @@ impl Tokenizer {
       if opener.range.end != pos {
         // exclude empty emph
         self.clear_openers(opener.range.start, pos + 1);
-        self.add_match(opener.range.start..opener.range.end, Annot::Add(annotation));
+        self.add_match(opener.range.clone(), Annot::Add(annotation));
         self.add_match(pos..endcloser, Annot::Sub(annotation));
         return endcloser;
       }
@@ -259,29 +258,29 @@ impl Tokenizer {
               && !self.subject[..opener.range.start].ends_with("[]");
             if is_image {
               self.add_match(opener.range.start - 1..opener.range.start, Atom::ImageMarker);
-              self.add_match(opener.range.start..opener.range.end, Comp::Imagetext.add());
-              self.add_match(opener.subspos..opener.subepos, Comp::Imagetext.sub());
+              self.add_match(opener.range.clone(), Comp::Imagetext.add());
+              self.add_match(opener.sub_range.clone(), Comp::Imagetext.sub());
             } else {
-              self.add_match(opener.range.start..opener.range.end, Comp::Linktext.add());
-              self.add_match(opener.subspos..opener.subepos, Comp::Linktext.sub());
+              self.add_match(opener.range.clone(), Comp::Linktext.add());
+              self.add_match(opener.sub_range.clone(), Comp::Linktext.sub());
             }
-            self.add_match(opener.subepos - 1..opener.subepos, Comp::Reference.add());
+            self.add_match(opener.sub_range.end - 1..opener.sub_range.end, Comp::Reference.add());
             self.add_match(pos..pos, Comp::Reference.sub());
             // convert all matches to str
-            self.str_matches(opener.subepos, pos);
+            self.str_matches(opener.sub_range.end, pos);
             // remove from openers
             self.clear_openers(opener.range.start, pos);
             return Some(pos + 1);
           } else if bounded_find(&self.subject, "^[%[]", pos + 1, endpos).is_match {
             opener.annot = "reference_link";
-            opener.subspos = pos; // intermediate ]
-            opener.subepos = pos + 2; // intermediate [
+            opener.sub_range.start = pos; // intermediate ]
+            opener.sub_range.end = pos + 2; // intermediate [
             self.add_match(pos..pos + 2, Atom::Str);
             return Some(pos + 2);
           } else if bounded_find(&self.subject, "^[(]", pos + 1, endpos).is_match {
             opener.annot = "explicit_link";
-            opener.subspos = pos; // intermediate ]
-            opener.subepos = pos + 2; // intermediate (
+            opener.sub_range.start = pos; // intermediate ]
+            opener.sub_range.end = pos + 2; // intermediate (
             self.openers.remove(&b'('); // clear ( openers
             self.destination = true;
             self.add_match(pos..pos + 2, Atom::Str);
@@ -312,23 +311,23 @@ impl Tokenizer {
           let openers = &self.openers.entry(b'[').or_default().clone();
           if let Some(opener) = openers.last().cloned() {
             if opener.annot == "explicit_link" {
-              let (startdest, enddest) = (opener.subepos - 1, pos);
+              let (startdest, enddest) = (opener.sub_range.end - 1, pos);
               // we have inline link
               let is_image = self.subject[..opener.range.start].ends_with('!')
                 && !self.subject[..opener.range.start].ends_with("[]");
               if is_image {
                 self.add_match(opener.range.start - 1..opener.range.start, Atom::ImageMarker);
-                self.add_match(opener.range.start..opener.range.end, Comp::Imagetext.add());
-                self.add_match(opener.subspos..opener.subepos, Comp::Imagetext.sub());
+                self.add_match(opener.range.clone(), Comp::Imagetext.add());
+                self.add_match(opener.sub_range.clone(), Comp::Imagetext.sub());
               } else {
-                self.add_match(opener.range.start..opener.range.end, Comp::Linktext.add());
-                self.add_match(opener.subspos..opener.subepos, Comp::Linktext.sub());
+                self.add_match(opener.range.clone(), Comp::Linktext.add());
+                self.add_match(opener.sub_range.clone(), Comp::Linktext.sub());
               }
               self.add_match(startdest..startdest + 1, Comp::Destination.add());
               self.add_match(enddest..enddest + 1, Comp::Destination.sub());
               self.destination = false;
               // convert all matches to str
-              self.str_matches(opener.subepos + 1, pos);
+              self.str_matches(opener.sub_range.end + 1, pos);
               // remove from openers
               self.clear_openers(opener.range.start, pos);
               return Some(enddest + 1);
@@ -443,6 +442,7 @@ impl Tokenizer {
       _ => return None,
     }
   }
+
   fn single_char(&mut self, pos: usize) -> usize {
     self.add_match(pos..pos + 1, Atom::Str);
     pos + 1
