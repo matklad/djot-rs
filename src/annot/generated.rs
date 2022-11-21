@@ -19,6 +19,7 @@ pub(crate) enum Comp {
   Insert,
   Delete,
   Mark,
+  Attributes,
 }
 
 impl fmt::Display for Comp {
@@ -42,6 +43,7 @@ impl fmt::Display for Comp {
       Comp::Insert => "insert",
       Comp::Delete => "delete",
       Comp::Mark => "mark",
+      Comp::Attributes => "attributes",
     })
   }
 }
@@ -66,6 +68,10 @@ pub(crate) enum Atom {
   CodeLanguage,
   EmDash,
   EnDash,
+  Id,
+  Key,
+  Value,
+  Class,
 }
 
 impl Atom {
@@ -112,6 +118,10 @@ impl fmt::Display for Atom {
       Atom::CodeLanguage => "code_language",
       Atom::EmDash => "em_dash",
       Atom::EnDash => "en_dash",
+      Atom::Id => "id",
+      Atom::Key => "key",
+      Atom::Value => "value",
+      Atom::Class => "class",
     })
   }
 }

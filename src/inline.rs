@@ -5,6 +5,7 @@ use std::{
 
 use crate::{
   annot::{Annot, Atom, Comp},
+  attribute,
   patterns::{find_at, is_space, PatMatch},
   Match, ParseOpts,
 };
@@ -20,6 +21,9 @@ pub struct Tokenizer {
   destination: bool,
   firstpos: usize,
   lastpos: usize,
+  allow_attributes: bool,
+  attribute_tokenizer: Option<attribute::Tokenizer>,
+  attribute_start: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +51,7 @@ fn bounded_find(subj: &str, patt: &'static str, startpos: usize, endpos: usize) 
 impl Tokenizer {
   pub fn new(subject: String, opts: ParseOpts) -> Tokenizer {
     let mut res = Tokenizer::default();
+    res.allow_attributes = true;
     res.subject = subject;
     res.opts = opts;
     res
@@ -342,8 +347,14 @@ impl Tokenizer {
         if self.subject[pos + 1..endpos].starts_with(|c: char| "_*~^+='\"-".contains(c)) {
           self.add_match(pos..pos + 1, Atom::OpenMarker);
           return Some(pos + 1);
+        } else if self.allow_attributes {
+          self.attribute_tokenizer = Some(attribute::Tokenizer::new(self.subject.clone()));
+          self.attribute_start = pos;
+          return Some(pos);
         } else {
-          // TODO: attributes
+          // disabling allow_attributes only lasts
+          // for one potential attribute start {, and then is re-enabled
+          self.allow_attributes = true;
           self.add_match(pos..pos + 1, Atom::Str);
           return Some(pos + 1);
         }
@@ -460,8 +471,36 @@ impl Tokenizer {
     }
     let mut pos = spos;
     while pos < endpos {
-      if false {
-        // TODO: attributes
+      if let Some(mut attribute_tokenizer) = self.attribute_tokenizer.take() {
+        let sp = pos;
+        let m = bounded_find(&self.subject, special, pos, endpos);
+        let ep2 = if m.is_match { m.start } else { endpos };
+        let (status, ep) = attribute_tokenizer.feed(sp, ep2);
+        match status {
+          attribute::Status::Done => {
+            let attribute_start = self.attribute_start;
+            // add attribute matches
+            self.add_match(attribute_start..attribute_start + 1, Comp::Attributes.add());
+            self.add_match(ep..ep + 1, Comp::Attributes.sub());
+            let attr_matches = attribute_tokenizer.get_matches();
+            for m in attr_matches {
+              self.add_match(m.s..m.e, m.a);
+            }
+            self.attribute_tokenizer = None;
+            self.attribute_start = !0;
+            pos = ep;
+          }
+          attribute::Status::Fail => {
+            pos = self.attribute_start;
+            self.allow_attributes = false;
+            self.attribute_tokenizer = None;
+            self.attribute_start = !0;
+          }
+          attribute::Status::Continue => {
+            self.attribute_tokenizer = Some(attribute_tokenizer);
+            pos = ep
+          }
+        }
       } else {
         // find next interesting character:
         let newpos = bounded_find(&subject, special, pos, endpos).or(endpos);
