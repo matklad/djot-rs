@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
-    CodeBlock, Delete, DoubleQuoted, Emoji, Emph, Image, Insert, Link, Mark, Para,
+    Attrs, CodeBlock, Delete, DoubleQuoted, Emoji, Emph, Image, Insert, Link, Mark, Para,
     ReferenceDefinition, SoftBreak, Str, Strong, Subscript, Superscript, Tag, Url, Verbatim,
   },
   block,
@@ -30,12 +30,12 @@ impl Ctx {
   fn get_doc(&mut self) -> Document {
     let mut res = Document::default();
     while self.idx < self.matches.len() {
-      res.children.extend(self.get_tag())
+      self.get_tag(&mut res.children)
     }
     res
   }
 
-  fn get_tag(&mut self) -> Option<Tag> {
+  fn get_tag(&mut self, acc: &mut Vec<Tag>) {
     self.skip_trivia();
     let m = self.matches[self.idx];
     self.idx += 1;
@@ -55,19 +55,25 @@ impl Ctx {
         Comp::Linktext => Tag::Link(self.get_link()),
         Comp::Imagetext => Tag::Image(self.get_image()),
         Comp::Url => Tag::Url(self.get_url()),
-        Comp::Attributes => return None,
+        Comp::Attributes => todo!(),
         Comp::ReferenceDefinition => {
           self.get_reference_definition();
-          return None;
+          return;
         }
         _ => todo!("{comp:?}"),
       },
       Annot::Sub(sub) => unreachable!("-{sub}"),
       Annot::Atom(atom) => match atom {
         Atom::Str => {
-          let mut res = Str::default();
-          res.text = self.subject[m.s..m.e].to_string();
-          Tag::Str(res)
+          let mut text = self.subject[m.s..m.e].to_string();
+          let attrs = self.get_attrs();
+          if !attrs.is_empty() {
+            if let Some(idx) = text.rfind(|it: char| it.is_ascii_whitespace()) {
+              acc.push(Tag::Str(Str { attrs: Attrs::new(), text: text[..idx + 1].to_string() }));
+              text.drain(..idx + 1);
+            }
+          }
+          Tag::Str(Str { attrs, text })
         }
         Atom::Emoji => {
           let mut res = Emoji::default();
@@ -75,11 +81,11 @@ impl Ctx {
           Tag::Emoji(res)
         }
         Atom::Softbreak => Tag::SoftBreak(SoftBreak::default()),
-        Atom::Class | Atom::Id => return None,
+        Atom::Class | Atom::Id => return,
         _ => todo!("{atom:?}"),
       },
     };
-    Some(res)
+    acc.push(res)
   }
 
   fn get_code_block(&mut self) -> CodeBlock {
@@ -203,6 +209,35 @@ impl Ctx {
     res
   }
 
+  fn get_attrs(&mut self) -> Attrs {
+    if !self.matches[self.idx].is(Comp::Attributes.add()) {
+      return Attrs::new();
+    }
+    self.idx += 1;
+    let mut res = Attrs::new();
+    loop {
+      let m = self.matches[self.idx];
+      self.idx += 1;
+      if m.is(Comp::Attributes.sub()) {
+        break;
+      }
+      if m.is(Atom::Class) {
+        match res.entry("class".to_string()) {
+          indexmap::map::Entry::Occupied(mut it) => {
+            it.insert(format!("{} {}", it.get(), &self.subject[m.s..m.e]));
+          }
+          indexmap::map::Entry::Vacant(it) => {
+            it.insert(self.subject[m.s..m.e].to_string());
+          }
+        }
+      }
+      if m.is(Atom::Id) {
+        res.insert("id".to_string(), self.subject[m.s..m.e].to_string());
+      }
+    }
+    res
+  }
+
   fn get_reference_definition(&mut self) {
     let mut res = ReferenceDefinition::default();
     let key = self.matches[self.idx];
@@ -223,7 +258,7 @@ impl Ctx {
   fn get_tags_until(&mut self, comp: Comp) -> Vec<Tag> {
     let mut res = vec![];
     while !self.matches[self.idx].is(comp.sub()) {
-      res.extend(self.get_tag());
+      self.get_tag(&mut res)
     }
     self.idx += 1;
     res

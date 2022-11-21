@@ -89,7 +89,15 @@ impl<'a> Ctx<'a> {
         self.out_escape_html(&url.destination);
         self.out("</a>");
       }
-      Tag::Str(str) => self.out_escape_html(&str.text),
+      Tag::Str(str) => {
+        if str.attrs.is_empty() {
+          self.out_escape_html(&str.text);
+        } else {
+          self.render_tag("span", &str.attrs);
+          self.out_escape_html(&str.text);
+          self.out("</span>")
+        }
+      }
       Tag::Emoji(emoji) => {
         if let Some(emoji) = crate::emoji::find_emoji(&emoji.alias) {
           self.out(emoji);
