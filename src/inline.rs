@@ -488,7 +488,7 @@ impl Tokenizer {
             }
             self.attribute_tokenizer = None;
             self.attribute_start = !0;
-            pos = ep;
+            pos = ep + 1;
           }
           attribute::Status::Fail => {
             pos = self.attribute_start;

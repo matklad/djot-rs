@@ -66,11 +66,11 @@ impl Tokenizer {
       match self.state {
         State::Done => return (Status::Done, pos),
         State::Fail => {
-          self.lastpos = pos;
+          self.lastpos = pos + 1;
           return (Status::Fail, pos);
         }
         _ => {
-          self.lastpos = pos;
+          self.lastpos = pos + 1;
           pos = pos + 1
         }
       }
