@@ -18,7 +18,7 @@ foo привет{.ru}
 .
 <p><span class="attr">some text</span></p>
 ```
-STOP
+
 Ensure that emphasis that starts before the attribute can still close,
 even if the attribute contains a potential closer.
 
@@ -48,7 +48,7 @@ hi\{key="abc{#hi}"
 .
 <p>hi{key=&ldquo;<span id="hi">abc</span>&rdquo;</p>
 ```
-
+STOP
 ```
 hi{key="\{#hi"}
 .

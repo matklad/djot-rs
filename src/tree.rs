@@ -238,9 +238,14 @@ impl Ctx {
             it.insert(self.subject[m.range.clone()].to_string());
           }
         }
-      }
-      if m.is(Atom::Id) {
+      } else if m.is(Atom::Id) {
         res.insert("id".to_string(), self.subject[m.range].to_string());
+      } else if m.is(Atom::Key) {
+        let key = self.subject[m.range].to_string();
+        let m = self.matches[self.idx].clone();
+        self.idx += 1;
+        let value = self.subject[m.range].to_string();
+        res.insert(key, value);
       }
     }
     res
