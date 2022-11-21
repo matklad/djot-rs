@@ -4,7 +4,7 @@ use crate::{
   annot::{Annot, Atom, Comp},
   ast::{
     Attrs, CodeBlock, Delete, DoubleQuoted, Emoji, Emph, Image, Insert, Link, Mark, Para,
-    ReferenceDefinition, SoftBreak, Str, Strong, Subscript, Superscript, Tag, Url, Verbatim,
+    ReferenceDefinition, SoftBreak, Span, Str, Strong, Subscript, Superscript, Tag, Url, Verbatim,
   },
   block,
   patterns::find,
@@ -56,6 +56,7 @@ impl Ctx {
         Comp::Imagetext => Tag::Image(self.get_image()),
         Comp::Url => Tag::Url(self.get_url()),
         Comp::Attributes => todo!(),
+        Comp::Span => Tag::Span(self.get_span()),
         Comp::ReferenceDefinition => {
           self.get_reference_definition();
           return;
@@ -206,6 +207,13 @@ impl Ctx {
   fn get_url(&mut self) -> Url {
     let mut res = Url::default();
     res.destination = self.get_text_until(Comp::Url);
+    res
+  }
+
+  fn get_span(&mut self) -> Span {
+    let mut res = Span::default();
+    res.children = self.get_tags_until(Comp::Span);
+    res.attrs = self.get_attrs();
     res
   }
 

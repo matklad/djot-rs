@@ -290,6 +290,14 @@ impl Tokenizer {
             self.destination = true;
             self.add_match(pos..pos + 2, Atom::Str);
             return Some(pos + 2);
+          } else if bounded_find(&self.subject, "^%{", pos + 1, endpos).is_match {
+            let opener = opener.clone();
+            // assume this is attributes, bracketed span
+            self.add_match(opener.range.clone(), Comp::Span.add());
+            self.add_match(pos..pos + 1, Comp::Span.sub());
+            // remove any openers between [ and ]
+            self.clear_openers(opener.range.start, pos);
+            return Some(pos + 1);
           }
         }
         return None;
