@@ -6,7 +6,7 @@ foo привет{.ru}
 .
 <p>foo <span class="ru">привет</span></p>
 ```
-STOP
+
 ```
 (some text){.attr}
 .
@@ -18,7 +18,7 @@ STOP
 .
 <p><span class="attr">some text</span></p>
 ```
-
+STOP
 Ensure that emphasis that starts before the attribute can still close,
 even if the attribute contains a potential closer.
 

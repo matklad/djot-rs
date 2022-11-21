@@ -17,6 +17,7 @@ reference
 destination
 emph
 strong
+span
 double_quoted
 reference_definition
 insert
