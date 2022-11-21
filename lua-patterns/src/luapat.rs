@@ -369,7 +369,7 @@ impl MatchState {
                         }
                         s = null(); /* match failed */
                     },
-                    b'0'...b'9' => {  /* capture results (%0-%9)? */
+                    b'0'..=b'9' => {  /* capture results (%0-%9)? */
                         s = self.match_capture(s,at(next(p)) as usize)?;
                         if ! s.is_null() {
                             return self.patt_match(s, add(p,2));
@@ -488,7 +488,7 @@ impl MatchState {
                             }
                             p = sub(p,1); // so we see [...]
                         },
-                        b'0' ... b'9' => {
+                        b'0' ..= b'9' => {
                             let l = (c as i8) - (b'1' as i8);
                             println!("level {}", self.level);
                             if l < 0 || l as usize >= self.level || self.capture[l as usize].is_unfinished() {
