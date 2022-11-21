@@ -37,7 +37,7 @@ impl Ctx {
 
   fn get_tag(&mut self, acc: &mut Vec<Tag>) {
     self.skip_trivia();
-    let m = self.matches[self.idx];
+    let m = self.matches[self.idx].clone();
     self.idx += 1;
     let res = match m.a {
       Annot::Add(comp) => match comp {
@@ -65,7 +65,7 @@ impl Ctx {
       Annot::Sub(sub) => unreachable!("-{sub}"),
       Annot::Atom(atom) => match atom {
         Atom::Str => {
-          let mut text = self.subject[m.s..m.e].to_string();
+          let mut text = self.subject[m.range].to_string();
           let attrs = self.get_attrs();
           if !attrs.is_empty() {
             if let Some(idx) = text.rfind(|it: char| it.is_ascii_whitespace()) {
@@ -77,7 +77,7 @@ impl Ctx {
         }
         Atom::Emoji => {
           let mut res = Emoji::default();
-          res.alias = self.subject[m.s + 1..m.e - 1].to_string();
+          res.alias = self.subject[m.range.start + 1..m.range.end - 1].to_string();
           Tag::Emoji(res)
         }
         Atom::Softbreak => Tag::SoftBreak(SoftBreak::default()),
@@ -90,9 +90,9 @@ impl Ctx {
 
   fn get_code_block(&mut self) -> CodeBlock {
     let mut res = CodeBlock::default();
-    let m = self.matches[self.idx];
+    let m = self.matches[self.idx].clone();
     if m.is(Atom::CodeLanguage) {
-      res.lang = Some(self.subject[m.s..m.e].to_string());
+      res.lang = Some(self.subject[m.range].to_string());
       self.idx += 1;
     }
     res.text = self.get_text_until(Comp::CodeBlock);
@@ -188,7 +188,7 @@ impl Ctx {
   }
 
   fn get_dest(&mut self) -> LinkDest {
-    let m = self.matches[self.idx];
+    let m = self.matches[self.idx].clone();
     self.idx += 1;
     if m.is(Comp::Destination.add()) {
       let dest = self.get_text_until(Comp::Destination);
@@ -216,7 +216,7 @@ impl Ctx {
     self.idx += 1;
     let mut res = Attrs::new();
     loop {
-      let m = self.matches[self.idx];
+      let m = self.matches[self.idx].clone();
       self.idx += 1;
       if m.is(Comp::Attributes.sub()) {
         break;
@@ -224,15 +224,15 @@ impl Ctx {
       if m.is(Atom::Class) {
         match res.entry("class".to_string()) {
           indexmap::map::Entry::Occupied(mut it) => {
-            it.insert(format!("{} {}", it.get(), &self.subject[m.s..m.e]));
+            it.insert(format!("{} {}", it.get(), &self.subject[m.range.clone()]));
           }
           indexmap::map::Entry::Vacant(it) => {
-            it.insert(self.subject[m.s..m.e].to_string());
+            it.insert(self.subject[m.range.clone()].to_string());
           }
         }
       }
       if m.is(Atom::Id) {
-        res.insert("id".to_string(), self.subject[m.s..m.e].to_string());
+        res.insert("id".to_string(), self.subject[m.range].to_string());
       }
     }
     res
@@ -240,19 +240,19 @@ impl Ctx {
 
   fn get_reference_definition(&mut self) {
     let mut res = ReferenceDefinition::default();
-    let key = self.matches[self.idx];
+    let key = self.matches[self.idx].clone();
     self.idx += 1;
     loop {
-      let m = self.matches[self.idx];
+      let m = self.matches[self.idx].clone();
       if !m.is(Atom::ReferenceValue) {
         break;
       }
       self.idx += 1;
-      res.destination.push_str(&self.subject[m.s..m.e]);
+      res.destination.push_str(&self.subject[m.range]);
     }
     assert!(self.matches[self.idx].is(Comp::ReferenceDefinition.sub()));
     self.idx += 1;
-    self.references.insert(self.subject[key.s + 1..key.e - 1].to_string(), res);
+    self.references.insert(self.subject[key.range.start + 1..key.range.end - 1].to_string(), res);
   }
 
   fn get_tags_until(&mut self, comp: Comp) -> Vec<Tag> {
@@ -267,19 +267,19 @@ impl Ctx {
   fn get_text_until(&mut self, comp: Comp) -> String {
     let mut res = String::new();
     loop {
-      let m = self.matches[self.idx];
+      let m = self.matches[self.idx].clone();
       self.idx += 1;
       if m.is(comp.sub()) {
         break;
       }
-      res.push_str(&self.subject[m.s..m.e]);
+      res.push_str(&self.subject[m.range]);
     }
     res
   }
 
   fn skip_trivia(&mut self) {
     while self.idx < self.matches.len() {
-      let m = self.matches[self.idx];
+      let m = self.matches[self.idx].clone();
       if !(m.is(Atom::Blankline) || m.is(Atom::ImageMarker) || m.is(Atom::Escape)) {
         break;
       }

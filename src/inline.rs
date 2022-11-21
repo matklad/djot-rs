@@ -187,9 +187,9 @@ impl Tokenizer {
 
         if m.is_match {
           // see f there were preceding spaces
-          if let Some((_, &mm)) = self.matches.iter().rev().next() {
-            let sp = mm.s;
-            let mut ep = mm.e;
+          if let Some((_, mm)) = self.matches.iter().rev().next() {
+            let sp = mm.range.start;
+            let mut ep = mm.range.end;
             if mm.is(Atom::Str) {
               while self.subject.as_bytes()[ep] == b' ' || self.subject.as_bytes()[ep] == b'\t' {
                 ep = ep - 1
@@ -484,7 +484,7 @@ impl Tokenizer {
             self.add_match(ep..ep + 1, Comp::Attributes.sub());
             let attr_matches = attribute_tokenizer.get_matches();
             for m in attr_matches {
-              self.add_match(m.s..m.e, m.a);
+              self.add_match(m.range, m.a);
             }
             self.attribute_tokenizer = None;
             self.attribute_start = !0;
@@ -551,13 +551,13 @@ impl Tokenizer {
     let mut sorted: Vec<Match> = Vec::new();
     let mut m_last = Match::new(0..0, Atom::Ellipses); // TODO
     for i in self.firstpos..=self.lastpos {
-      if let Some(&m) = self.matches.get(&i) {
-        if m.is(Atom::Str) && m_last.is(Atom::Str) && m_last.e == m.s {
-          (*sorted.last_mut().unwrap()).e = m.e;
-          m_last.e = m.e;
+      if let Some(m) = self.matches.get(&i) {
+        if m.is(Atom::Str) && m_last.is(Atom::Str) && m_last.range.end == m.range.start {
+          (*sorted.last_mut().unwrap()).range.end = m.range.end;
+          m_last.range.end = m.range.end;
         } else {
-          sorted.push(m);
-          m_last = m
+          sorted.push(m.clone());
+          m_last = m.clone()
         }
       }
     }
@@ -568,7 +568,7 @@ impl Tokenizer {
       }
       if self.verbatim > 0 {
         // unclosed verbatim
-        let e = sorted.last().unwrap().e;
+        let e = sorted.last().unwrap().range.end;
         sorted.push(Match::new(e..e, self.verbatim_type.sub()))
       }
     }

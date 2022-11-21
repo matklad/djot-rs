@@ -66,16 +66,15 @@ impl Document {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Match {
-  s: usize,
-  e: usize,
+  range: Range<usize>,
   a: Annot,
 }
 
 impl Match {
   fn new(range: Range<usize>, a: impl Into<Annot>) -> Match {
-    Match { s: range.start, e: range.end, a: a.into() }
+    Match { range, a: a.into() }
   }
   fn is(&self, annot: impl Into<Annot>) -> bool {
     self.a == annot.into()

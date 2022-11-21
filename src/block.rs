@@ -342,9 +342,18 @@ impl Tokenizer {
       cont.close(self)
     }
     if self.opts.debug_matches {
-      for &m in &self.matches {
-        let ms = format!("{} {}-{}", m.a, m.s + 1, if m.e == m.s { m.e + 1 } else { m.e });
-        format_to!(self.debug, "{ms:<20} {:?}\n", self.subject.get(m.s..m.e).unwrap_or_default());
+      for m in &self.matches {
+        let ms = format!(
+          "{} {}-{}",
+          m.a,
+          m.range.start + 1,
+          if m.range.is_empty() { m.range.end + 1 } else { m.range.end }
+        );
+        format_to!(
+          self.debug,
+          "{ms:<20} {:?}\n",
+          self.subject.get(m.range.clone()).unwrap_or_default()
+        );
       }
     }
   }
