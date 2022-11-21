@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.66"
 indexmap = { version = "1.9.1", features = ["serde"] }
 lexopt = "0.2.1"
-lua-patterns = "0.4.0"
+lua-patterns = { path = "lua-patterns" }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.87"
 
