@@ -22,6 +22,7 @@ reference_definition
 insert
 delete
 mark
+attributes
 
 str
 escape
@@ -41,6 +42,10 @@ reference_value
 code_language
 em_dash
 en_dash
+id
+key
+value
+class
 ";
 
 #[test]

@@ -55,6 +55,7 @@ impl Ctx {
         Comp::Linktext => Tag::Link(self.get_link()),
         Comp::Imagetext => Tag::Image(self.get_image()),
         Comp::Url => Tag::Url(self.get_url()),
+        Comp::Attributes => return None,
         Comp::ReferenceDefinition => {
           self.get_reference_definition();
           return None;
@@ -74,6 +75,7 @@ impl Ctx {
           Tag::Emoji(res)
         }
         Atom::Softbreak => Tag::SoftBreak(SoftBreak::default()),
+        Atom::Class | Atom::Id => return None,
         _ => todo!("{atom:?}"),
       },
     };

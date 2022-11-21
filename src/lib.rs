@@ -5,6 +5,7 @@ mod annot;
 mod patterns;
 mod block;
 mod inline;
+mod attribute;
 mod tree;
 mod emoji;
 mod html;
