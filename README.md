@@ -28,3 +28,7 @@ the upstream project (see `.test` files in `tests/data`)
 * djot.ts module for convenience
 * typescript extensible visitor API for rendering: `./djot.ts intput.adoc --template slides.ts`
   `ast.to_html({ code_block: (tag) => { ... }})`.
+
+## See Also
+
+* https://git.sr.ht/~kmaasrud/djr a pulldown-cmark inspired parser
