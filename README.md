@@ -1,5 +1,14 @@
 # djot-rs
 
+UPDATE:
+
+This didn't went particularly far, checkout
+
+<https://github.com/hellux/jotdown>
+
+instead.
+
+
 An experimental Rust implementation of the [Djot](https://djot.net) light markup
 language.
 
